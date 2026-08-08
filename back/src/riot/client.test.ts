@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { riotGet, type RiotPlatform } from './client.js';
+import { riotGet, type RiotCluster } from './client.js';
 
 // Unit tests for the Riot HTTP wrapper. Mocks global fetch so no network
 // calls are made and no real Riot key is needed. Covers the critical
 // behaviors: X-Riot-Token header, 429 + Retry-After retry, error mapping.
 describe('riot/client', () => {
-  const platform: RiotPlatform = 'americas';
+  const cluster: RiotCluster = 'americas';
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe('riot/client', () => {
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ ok: true }), { status: 200 }),
     );
-    await riotGet(platform, '/riot/account/v1/accounts/by-riot-id/A/B');
+    await riotGet(cluster, '/riot/account/v1/accounts/by-riot-id/A/B');
     const [, init] = fetchMock.mock.calls[0]!;
     expect(init?.headers).toEqual({ 'X-Riot-Token': 'test-riot-key' });
   });
@@ -30,7 +30,7 @@ describe('riot/client', () => {
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ puuid: 'abc' }), { status: 200 }),
     );
-    const data = await riotGet<{ puuid: string }>(platform, '/x');
+    const data = await riotGet<{ puuid: string }>(cluster, '/x');
     expect(data).toEqual({ puuid: 'abc' });
   });
 
@@ -39,7 +39,7 @@ describe('riot/client', () => {
     fetchMock
       .mockResolvedValueOnce(new Response('rate', { status: 429, headers: { 'Retry-After': '2' } }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
-    const p = riotGet(platform, '/x');
+    const p = riotGet(cluster, '/x');
     await vi.advanceTimersByTimeAsync(2100);
     const data = await p;
     expect(data).toEqual({ ok: true });
@@ -51,7 +51,7 @@ describe('riot/client', () => {
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ status: { message: 'no player' } }), { status: 404 }),
     );
-    await expect(riotGet(platform, '/x')).rejects.toMatchObject({
+    await expect(riotGet(cluster, '/x')).rejects.toMatchObject({
       statusCode: 404,
       name: 'ApiError',
     });
@@ -61,7 +61,7 @@ describe('riot/client', () => {
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ status: { message: 'bad token' } }), { status: 401 }),
     );
-    await expect(riotGet(platform, '/x')).rejects.toMatchObject({
+    await expect(riotGet(cluster, '/x')).rejects.toMatchObject({
       statusCode: 401,
       name: 'ApiError',
     });
@@ -71,15 +71,15 @@ describe('riot/client', () => {
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ status: { message: 'boom' } }), { status: 500 }),
     );
-    await expect(riotGet(platform, '/x')).rejects.toMatchObject({
+    await expect(riotGet(cluster, '/x')).rejects.toMatchObject({
       statusCode: 500,
       name: 'ApiError',
     });
   });
 
-  it('forges the URL from platform + path', async () => {
+  it('forges the URL from routing value + path', async () => {
     fetchMock.mockResolvedValueOnce(new Response('{}', { status: 200 }));
-    await riotGet(platform, '/riot/account/v1/accounts/by-riot-id/A/B');
+    await riotGet(cluster, '/riot/account/v1/accounts/by-riot-id/A/B');
     const [url] = fetchMock.mock.calls[0]!;
     expect(url).toBe('https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/A/B');
   });

@@ -1,7 +1,7 @@
 import { prisma } from '../lib/client.js';
 import { ApiError } from '../utils/ApiError.js';
 import { getByRiotId, type RiotAccount } from '../riot/account.api.js';
-import type { RiotPlatform } from '../riot/client.js';
+import type { RiotCluster } from '../riot/client.js';
 
 // Business logic and database access for the Account entity.
 // Orchestrates: Riot API fetch → normalize → idempotent upsert to Postgres.
@@ -12,13 +12,13 @@ export const accountService = {
   // staleness/TTL strategy can be layered on later without changing the
   // call sites. Uses upsert keyed on puuid so a refetch never duplicates.
   async findByRiotId(
-    platform: RiotPlatform,
+    cluster: RiotCluster,
     gameName: string,
     tagLine: string,
   ) {
     let riotAccount: RiotAccount;
     try {
-      riotAccount = await getByRiotId(platform, gameName, tagLine);
+      riotAccount = await getByRiotId(cluster, gameName, tagLine);
     } catch (err) {
       // 404s from Riot surface as ApiError.notFound — let them propagate.
       throw err;
