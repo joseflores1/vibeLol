@@ -1,13 +1,13 @@
 // Summoner — the per-server player profile. Riot's Summoner v4 is
-// region-routed (na1/euw1/kr/…), keyed by puuid. summonerId (-> id) is
-// the routing key for League v4 (which only accepts encryptedSummonerId).
-// One Account can have one Summoner per region; the @unique on puuid
-// means a single puuid maps to one Summoner row globally (Riot guarantees
-// puuid is stable across regions for the same account).
+// region-routed (na1/euw1/kr/…), keyed by puuid. Per Riot's Riot-ID
+// migration, the summonerId (-> id field) is no longer reliably returned
+// by /by-puuid, so we key on puuid (universal + stable) instead.
+// summonerId is stored when available for future League v4 routing.
 model Summoner {
-  summonerId     String   @id @map("summoner_id")
+  // puuid is both the PK and the FK to Account — 1:1 relationship.
+  puuid          String   @id @map("puuid")
   account         Account  @relation(fields: [puuid], references: [puuid], onDelete: Cascade)
-  puuid          String   @unique @map("puuid")
+  summonerId     String?  @map("summoner_id")
   name           String?
   summonerLevel  Int      @map("summoner_level")
   profileIconId  Int      @map("profile_icon_id")

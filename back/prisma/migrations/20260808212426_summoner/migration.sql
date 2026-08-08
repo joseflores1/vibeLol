@@ -1,7 +1,7 @@
 -- CreateTable
 CREATE TABLE "summoners" (
-    "summoner_id" TEXT NOT NULL,
     "puuid" TEXT NOT NULL,
+    "summoner_id" TEXT,
     "name" TEXT,
     "summoner_level" INTEGER NOT NULL,
     "profile_icon_id" INTEGER NOT NULL,
@@ -9,11 +9,8 @@ CREATE TABLE "summoners" (
     "region" TEXT NOT NULL,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "summoners_pkey" PRIMARY KEY ("summoner_id")
+    CONSTRAINT "summoners_pkey" PRIMARY KEY ("puuid")
 );
-
--- CreateIndex
-CREATE UNIQUE INDEX "summoners_puuid_key" ON "summoners"("puuid");
 
 -- AddForeignKey
 ALTER TABLE "summoners" ADD CONSTRAINT "summoners_puuid_fkey" FOREIGN KEY ("puuid") REFERENCES "accounts"("puuid") ON DELETE CASCADE ON UPDATE CASCADE;
