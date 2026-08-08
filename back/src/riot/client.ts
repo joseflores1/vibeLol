@@ -1,8 +1,20 @@
 import { env } from '../config/env.js';
 import { ApiError } from '../utils/ApiError.js';
 
-// Riot regional platforms (account/match-level routing).
-export type RiotPlatform = 'americas' | 'europe' | 'asia';
+// Riot clusters (account/match-level routing): continental groupings.
+export type RiotCluster = 'americas' | 'europe' | 'asia' | 'sea';
+
+// Riot regions (summoner/league/mastery-level routing): per-server platforms.
+// Full list from https://developer.riotgames.com/docs/lol#routing-values
+export type RiotRegion =
+  | 'na1' | 'br1' | 'la1' | 'la2' | 'oc1'
+  | 'euw1' | 'eun1' | 'tr1' | 'ru'
+  | 'kr' | 'jp1'
+  | 'ph2' | 'sg2' | 'th2' | 'tw2' | 'vn2';
+
+// Either routing value works in the URL host — Riot's API just uses the
+// routing value as the subdomain of api.riotgames.com.
+export type RiotRouting = RiotCluster | RiotRegion;
 
 // Minimal shape of a Riot API error payload: { status: { message }, ... }
 interface RiotErrorPayload {
@@ -13,9 +25,9 @@ interface RiotErrorPayload {
 // Sleep helper —Honors Riot's Retry-After header (in seconds) on 429s.
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// Builds the full URL for a given platform + path (path already starts with "/").
-function buildUrl(platform: RiotPlatform, path: string): string {
-  return `https://${platform}.api.riotgames.com${path}`;
+// Builds the full URL for a given routing value + path (path starts with "/").
+function buildUrl(routing: RiotRouting, path: string): string {
+  return `https://${routing}.api.riotgames.com${path}`;
 }
 
 // Parses a Riot error response body into a human-readable message.
@@ -29,8 +41,8 @@ function describeError(status: number, body: unknown): string {
 // Core request runner. Sends X-Riot-Token, retries once on 429 honoring
 // Retry-After, and throws ApiError for any non-2xx outcome. Pure HTTP —
 // no Prisma, no business logic — so the Riot layer stays mockable.
-async function request<T>(platform: RiotPlatform, path: string): Promise<T> {
-  const url = buildUrl(platform, path);
+async function request<T>(routing: RiotRouting, path: string): Promise<T> {
+  const url = buildUrl(routing, path);
   const headers = { 'X-Riot-Token': env.riotApiKey };
 
   const run = async (): Promise<T> => {
@@ -80,6 +92,6 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 // Public entry point used by riot/*.api.ts files.
-export async function riotGet<T>(platform: RiotPlatform, path: string): Promise<T> {
-  return request<T>(platform, path);
+export async function riotGet<T>(routing: RiotRouting, path: string): Promise<T> {
+  return request<T>(routing, path);
 }

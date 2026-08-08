@@ -1,0 +1,22 @@
+// Summoner — the per-server player profile. Riot's Summoner v4 is
+// region-routed (na1/euw1/kr/…), keyed by puuid. Per Riot's Riot-ID
+// migration, the summonerId (-> id field) is no longer reliably returned
+// by /by-puuid, so we key on puuid (universal + stable) instead.
+// summonerId is stored when available for future League v4 routing.
+model Summoner {
+  // puuid is both the PK and the FK to Account — 1:1 relationship.
+  puuid          String   @id @map("puuid")
+  account         Account  @relation(fields: [puuid], references: [puuid], onDelete: Cascade)
+  summonerId     String?  @map("summoner_id")
+  name           String?
+  summonerLevel  Int      @map("summoner_level")
+  profileIconId  Int      @map("profile_icon_id")
+  // Riot returns ms epoch → store as DateTime for range queries.
+  revisionDate   DateTime @map("revision_date")
+  // Denormalized from the call that fetched this summoner — lets future
+  // League v4 / Mastery v4 calls route without re-deriving the region.
+  region         String
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("summoners")
+}
