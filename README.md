@@ -1,19 +1,52 @@
 # vibeLol
 
-League of Legends statistics platform (op.gg / lolalytics / u.gg style), powered
-by the [Riot Games API](https://developer.riotgames.com/).
+[![CI](https://github.com/joseflores1/vibeLol/actions/workflows/ci.yml/badge.svg)](https://github.com/joseflores1/vibeLol/actions/workflows/ci.yml)
+[![backend: TypeScript 7](https://img.shields.io/badge/backend-TypeScript%207-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![frontend: TypeScript 6](https://img.shields.io/badge/frontend-TypeScript%206-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Prisma 7](https://img.shields.io/badge/Prisma-7-5a67d8?logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![React 19](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=black)](https://react.dev/)
+[![Node 24](https://img.shields.io/badge/Node-24_LTS-5fa04e?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169e1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+
+## Description
+
+League of Legends statistics platform in the style of [op.gg](https://op.gg/),
+[lolalytics](https://lolalytics.com/), and [u.gg](https://u.gg/). It aggregates
+summoner profiles, match history, ranked stats, champion mastery, and champion
+win-rate analytics, powered by the [Riot Games API](https://developer.riotgames.com/).
 
 > vibeLol isn't endorsed by Riot Games and doesn't reflect the views or
 > opinions of Riot Games or anyone officially involved in producing or
 > managing Riot Games properties. All data shown is provided by Riot Games.
 
-## Prerequisites
+## Motivation
+
+Most LoL stats sites are closed-source black boxes — you can't see how they
+handle Riot's rate limits, how they cache expensive match pulls, or how they
+normalize the sprawling match-participant payload into something queryable.
+vibeLol is a from-scratch, end-to-end implementation of that stack:
+
+- A **thin Riot HTTP layer** (rate-limit-aware, honoring `Retry-After`) so
+  the scary parts of the Riot API are isolated and mockable.
+- A **Postgres-backed cache** via Prisma (`upsert` keyed on Riot IDs) so the
+  frontend never calls Riot directly and repeated lookups are cheap.
+- A **typed REST surface** the React frontend consumes, decoupling UI from
+  upstream API churn.
+
+It's also a portfolio project: every layer (Riot client, services, Prisma
+schema, controllers, routes) is written to industry conventions, with
+type-safe contracts (Zod), centralized error handling, and CI that runs a
+mocked test suite (no live Riot key in CI).
+
+## Quick Start
+
+### Prerequisites
 
 - [Node.js 24+](https://nodejs.org)
 - [Docker](https://docs.docker.com/get-docker/)
 - A [Riot Games API key](https://developer.riotgames.com/) (for the backend)
 
-## First time setup
+### First time setup
 
 **1. Install dependencies**
 
@@ -44,7 +77,7 @@ docker compose up -d
 cd back && npx prisma migrate dev
 ```
 
-## Running the project
+## Usage
 
 Open 3 terminals:
 
@@ -64,7 +97,7 @@ cd front && npm run dev
 | Frontend | http://localhost:5173 |
 | Backend  | http://localhost:3000 |
 
-## Database
+### Database
 
 ```bash
 # Apply migrations after pulling changes that update the schema
@@ -73,7 +106,8 @@ cd back && npx prisma migrate dev
 # Visual database explorer
 cd back && npx prisma studio
 ```
-## Stopping the project
+
+### Stopping the project
 
 **Backend and frontend:** `Ctrl+C` in each terminal
 
@@ -89,3 +123,29 @@ docker compose down
 
 > `stop` vs `down`: both preserve your data. Use `stop` if you'll restart soon,
 > `down` for a clean shutdown. To restart after either, run `docker compose up -d`.
+
+## Contributing
+
+Contributions follow the conventions in [`AGENTS.md`](./AGENTS.md) — read it
+before touching code. The short version:
+
+- **Layered backend:** `routes → controllers → services → prisma`. Controllers
+  stay thin, services throw `ApiError`, central middleware shapes the response.
+- **Riot layer:** pure HTTP in `back/src/riot/*.api.ts`; services orchestrate
+  fetch → normalize → `upsert` to Postgres.
+- **TypeScript split:** backend on TS7 (native Go port, ~10x faster); frontend
+  on TS6 (`typescript-eslint` doesn't yet support TS7). See AGENTS.md §9.
+- **Tests mock Riot:** `RIOT_API_KEY` is never set in CI; the Riot layer is
+  mockable by design.
+
+### Workflow
+
+1. Branch from `main` (`feat/<name>`, `fix/<name>`, `docs/<name>`, `ci/<name>`).
+2. Make conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `ci:`).
+3. Push and open a PR against `main`. CI runs typecheck + tests + build for
+   both packages (backend uses a Postgres service container).
+4. **Squash-merge** once CI passes — the squash commit message is the PR title,
+   keeping history conventional.
+5. Never commit `.env` or `src/generated/prisma/` (both gitignored).
+
+CI: `.github/workflows/ci.yml` runs on every push to `main` and on every PR.
