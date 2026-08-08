@@ -11,6 +11,10 @@ model Account {
   region    String?
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  // One-to-one: an Account can have one Summoner (Riot guarantees puuid
+  // stability, so one puuid → one summoner per region).
+  summoner   Summoner?
+
   // Look up by Riot ID (gameName#tagLine) without first knowing the puuid.
   @@unique([gameName, tagLine])
   @@map("accounts")
