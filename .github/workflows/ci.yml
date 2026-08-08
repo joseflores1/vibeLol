@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same ref when a new commit is pushed.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (typecheck + test + build)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: viblol
+          POSTGRES_PASSWORD: viblol
+          POSTGRES_DB: viblol_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://viblol:viblol@localhost:5432/viblol_test?schema=public
+      # RIOT_API_KEY is intentionally NOT set in CI — tests mock the Riot layer.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: back/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: back
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        working-directory: back
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+        working-directory: back
+
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: back
+
+      - name: Test
+        run: npm test
+        working-directory: back
+
+      - name: Build
+        run: npm run build
+        working-directory: back
+
+  frontend:
+    name: Frontend (lint + test + build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: front
+
+      - name: Lint
+        run: npm run lint
+        working-directory: front
+
+      - name: Test
+        run: npm test
+        working-directory: front
+
+      - name: Build
+        run: npm run build
+        working-directory: front

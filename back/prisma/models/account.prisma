@@ -1,0 +1,17 @@
+// Account — first LoL-domain entity. Mirrors Riot's Account v1 output:
+// the puuid is the universal Riot identifier used across every other API.
+// Keep users/profiles/tasks as legacy scaffolding; add LoL models alongside.
+model Account {
+  puuid     String   @id
+  gameName  String   @map("game_name")
+  tagLine   String   @map("tag_line")
+  // Regional platform (na1/euw1/kr/…) — filled in when known via Summoner v4.
+  // Account v1 itself is platform-routed (americas/europe/asia) and doesn't
+  // surface a region, so this stays nullable until a summoner lookup.
+  region    String?
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Look up by Riot ID (gameName#tagLine) without first knowing the puuid.
+  @@unique([gameName, tagLine])
+  @@map("accounts")
+}
