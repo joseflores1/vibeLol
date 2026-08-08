@@ -9,7 +9,7 @@ by the [Riot Games API](https://developer.riotgames.com/).
 
 ## Prerequisites
 
-- [Node.js 20+](https://nodejs.org)
+- [Node.js 24+](https://nodejs.org)
 - [Docker](https://docs.docker.com/get-docker/)
 - A [Riot Games API key](https://developer.riotgames.com/) (for the backend)
 

@@ -15,7 +15,7 @@ The project is a monorepo:
 
 | Path    | Stack                                                        | Purpose                                  |
 |---------|--------------------------------------------------------------|------------------------------------------|
-| `back/` | Node 20, Express 5, Prisma 7, PostgreSQL 16, TypeScript 7    | REST API, Riot API integration, caching  |
+| `back/` | Node 24 LTS, Express 5, Prisma 7, PostgreSQL 16, TypeScript 7    | REST API, Riot API integration, caching  |
 | `front/` | React 19, TypeScript 6, Vite 8, ESLint 10                  | Web UI for stats browsing                |
 
 The database runs in Docker (`docker-compose.yml` → Postgres 16). The Riot
@@ -31,7 +31,7 @@ normalizes, caches in Postgres, and exposes a clean REST surface.
 ## 2. Tech stack & versions
 
 ### Backend (`back/`)
-- **Runtime:** Node.js 20+
+- **Runtime:** Node.js 24 LTS+
 - **Language:** TypeScript 7.0.x (native Go port, ~10x faster). `tsconfig.json`
   uses `module: nodenext`, `moduleResolution: nodenext`, `strict`,
   `verbatimModuleSyntax`, `noUncheckedIndexedAccess`, `target: ES2022`.
