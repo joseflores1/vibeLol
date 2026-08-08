@@ -1,0 +1,19 @@
+// Match — a single League of Legends match. Riot's Match v5 is cluster-routed
+// (americas/europe/asia), keyed on matchId (region-prefixed public handle
+// like NA1_5000000000 — safe to cache + expose in URLs per §5a).
+model Match {
+  matchId             String             @id @map("match_id")
+  dataVersion         String?            @map("data_version")
+  gameCreation        DateTime           @map("game_creation")
+  gameDuration        Int                @map("game_duration")
+  gameStartTimestamp  DateTime           @map("game_start_timestamp")
+  gameEndTimestamp    DateTime?          @map("game_end_timestamp")
+  gameMode            String             @map("game_mode")
+  gameType            String             @map("game_type")
+  gameVersion        String?            @map("game_version")
+  mapId               Int?               @map("map_id")
+  queueId             Int?               @map("queue_id")
+  participants        MatchParticipant[]
+
+  @@map("matches")
+}

@@ -1,0 +1,44 @@
+// MatchParticipant — per-player per-match stats. Essential stats only
+// (~20 fields); perks/runes JSON deferred to Phase 2d (needs Data Dragon).
+//
+// puuid is a DECOUPLED indexed String (not a FK to Account). This lets matches
+// store enemies we haven't searched yet. Accounts backfill lazily when
+// someone searches that player. Standard design for LoL stats sites.
+model MatchParticipant {
+  id                  String   @id @default(uuid()) @map("id")
+  match               Match    @relation(fields: [matchId], references: [matchId], onDelete: Cascade)
+  matchId             String   @map("match_id")
+  // Decoupled puuid — see AGENTS.md §5a. Universal & keyholder-stable,
+  // but NOT a FK to Account (participants may include enemies we haven't
+  // cached yet — avoids N extra Account v1 fetches per match).
+  puuid               String   @map("puuid")
+  championId          Int      @map("champion_id")
+  championName        String   @map("champion_name")
+  kills               Int
+  deaths              Int
+  assists             Int
+  goldEarned          Int      @map("gold_earned")
+  item0               Int?
+  item1               Int?
+  item2               Int?
+  item3               Int?
+  item4               Int?
+  item5               Int?
+  item6               Int?
+  summoner1Id         Int      @map("summoner1_id")
+  summoner2Id         Int      @map("summoner2_id")
+  teamId              Int      @map("team_id")
+  win                 Boolean
+  visionScore         Int?     @map("vision_score")
+  wardsPlaced         Int?     @map("wards_placed")
+  wardsKilled         Int?     @map("wards_killed")
+  totalMinionsKilled  Int?     @map("total_minions_killed")
+
+  // One row per player per match — idempotent upsert on refetch.
+  @@unique([matchId, puuid])
+  // Fast "show me all matches for this player" query.
+  @@index([puuid])
+  // Future champion win-rate analytics.
+  @@index([championId])
+  @@map("match_participants")
+}
