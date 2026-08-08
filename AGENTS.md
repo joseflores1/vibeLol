@@ -137,6 +137,68 @@ Reference docs: <https://developer.riotgames.com/docs/lol> and
 - The key MUST come from env (`RIOT_API_KEY`), wired through `env.ts` via
   `requireEnv('RIOT_API_KEY')`. **Never hardcode the key or commit `.env`.**
 
+### Identifiers & security layer
+Riot exposes several player identifiers, each with different stability and
+privacy properties. Getting this right prevents subtle bugs when an API
+key rotates.
+
+| Field          | Stable across keys? | Use                                          |
+|----------------|---------------------|----------------------------------------------|
+| `puuid`        | Yes — universal     | Primary join key across all tables. Cache     |
+|                | & cross-game         | indefinitely. The whole point of puuid.      |
+| `matchId`      | Yes — Riot's public | Safe to cache + expose in URLs (e.g.         |
+|                | handle, region-     | `NA1_5000000000`). Not derived from the      |
+|                | prefixed             | calling key.                                 |
+| `summonerId`   | No — per-key         | Persist as `String?` only for short-term      |
+| (`id` in v4)   | encrypted; stale     | League v4 routing within one key lifetime.   |
+|                | on key rotation      | Never key long-term logic on it. Before any  |
+|                |                      | League v4 call, re-derive it from a fresh     |
+|                |                      | Summoner v4 `/by-puuid` lookup.               |
+| `accountId`    | No — per-key +       | Don't persist. Riot calls it legacy-          |
+|                | legacy-deprecated    | deprecated. Validated in zod for safety,     |
+|                |                      | dropped before storage.                       |
+
+**Why this matters:** Riot's 2018 security layer
+(<https://www.riotgames.com/en/DevRel/player-universally-unique-identifiers-and-a-new-security-layer>)
+originally made **all** v4 IDs (puuid, summonerId, accountId) unique per API
+key holder. That would have made any stored ID garbage on a key rotation.
+Riot later promoted **only `puuid`** to be universal and keyholder-stable
+(see current docs at
+<https://developer.riotgames.com/docs/lol#summoner-names-to-riot-ids>);
+`summonerId` and `accountId` remain per-key encrypted. This is why the
+`Summoner` model keys on `puuid` (not `summonerId`) and why `accountId` is
+not persisted anywhere.
+
+### Puuids in public URLs — don't
+Treat `puuid` as a **backend routing key only**, never a user-facing URL
+segment. User-facing URLs use the **Riot ID** (`gameName#tagLine`):
+
+- ✅ `/api/v1/summoners/by-riot-id/:gameName/:tagLine/matches?region=na1`
+- ✅ `/api/v1/summoners/by-riot-id/:gameName/:tagLine/matches/:matchId?region=`
+- ❌ `/api/v1/matches/by-puuid/:puuid/ids` (never — puuid is cross-game,
+  leaking it in a public URL makes a user's LoL/Valorant/TFT histories
+  trivially linkable)
+
+Rationale: Riot's post-Nov-2023 migration explicitly instructs third-party
+apps to display Riot IDs in user-facing fields. op.gg, lolalytics, and u.gg
+all use Riot-ID-scoped URLs. `puuid` may appear in JSON response bodies
+(for the frontend to identify "your row" in a participant list), never in a
+URL path or query string.
+
+### Privacy & game-integrity policy (Riot ToS alignment)
+- **Hidden players:** if Riot returns 404 for a player, surface it as 404 —
+  never invent data Riot refuses to confirm. The Riot client's
+  `riotGet` → `ApiError.notFound` mapping already enforces this.
+- **Custom-queue matches:** Riot requires opt-in (RSO, production key) to
+  publicly display a player's custom-queue match history. Public
+  match-history endpoints must filter `queueId` to exclude custom games
+  until RSO lands (out of scope for Phase 2b; documented constraint).
+- **No augment/arena win-rates** (Riot explicitly disallows).
+- **No MMR/ELO calculators** (Riot explicitly disallows alternatives to
+  the ranked ladder).
+- **Attribution boilerplate** must be visible in the UI (already
+  documented in section 1).
+
 ### Base URLs & routing
 Riot splits APIs by **regional platform** (match/account-level) and
 **region** (summoner/league-level):
@@ -213,6 +275,11 @@ Riot API responses are persisted in Postgres via Prisma (idempotent `upsert`
 keyed on Riot IDs like `puuid` / `matchId`). The backend always reads from
 the DB cache first and only refreshes from Riot on miss / staleness. The
 **frontend never calls Riot directly**.
+
+Persist `puuid` and `matchId` freely (universal & keyholder-stable). Persist
+`summonerId` as `String?` only for short-term League v4 routing — it's
+per-key encrypted and goes stale if the dev key ever rotates (see §5a).
+Never persist `accountId`.
 
 ### LoL-domain models (replace the legacy scaffolding)
 The existing `users` / `profiles` / `tasks` models were sample scaffolding
