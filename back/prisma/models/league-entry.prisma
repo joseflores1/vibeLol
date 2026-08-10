@@ -1,0 +1,27 @@
+// LeagueEntry — ranked queue entries (solo/duo + flex) for a player.
+// Riot's League v4 entries/by-puuid endpoint returns one entry per queue.
+//
+// puuid is DECOUPLED (matches MatchParticipant pattern from PR #5) —
+// NOT a FK to Account. League data can be stored for any player we
+// encounter without pre-creating their Account row. Accounts backfill
+// lazily on search. Per AGENTS.md §5a: puuid is universal + keyholder-stable.
+model LeagueEntry {
+  puuid          String  @map("puuid")
+  queueType      String  @map("queue_type")  // RANKED_SOLO_5x5, RANKED_FLEX_SR
+  tier           String  // IRON, BRONZE, ..., MASTER, GRANDMASTER, CHALLENGER
+  rank           String  // I, II, III, IV (empty for MASTER+)
+  leaguePoints   Int     @map("league_points")
+  wins           Int
+  losses         Int
+  veteran        Boolean @default(false)
+  inactive       Boolean @default(false)
+  freshBlood     Boolean @default(false) @map("fresh_blood")
+  hotStreak      Boolean @default(false) @map("hot_streak")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // One row per player per queue — idempotent upsert on refetch.
+  @@id([puuid, queueType])
+  // Fast "all ranked entries for this player" query.
+  @@index([puuid])
+  @@map("league_entries")
+}

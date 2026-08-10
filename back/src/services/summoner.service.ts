@@ -21,6 +21,34 @@ export function clusterFromRegion(region: RiotRegion): RiotCluster {
   }
 }
 
+// Shared Riot-ID-first helper: looks up the Riot ID via Account v1, returns
+// the { puuid, riotAccount }, and upserts the Account so future lookups
+// are cached. Used by league + mastery services (match.service has its own
+// inline upsert — left as-is to avoid touching working code).
+// Throws Riot 404s as ApiError.notFound (propagated from riotGet).
+export async function resolveAndCacheAccount(
+  region: RiotRegion,
+  gameName: string,
+  tagLine: string,
+): Promise<RiotAccount> {
+  const riotAccount = await getByRiotId(clusterFromRegion(region), gameName, tagLine);
+  await prisma.account.upsert({
+    where: { puuid: riotAccount.puuid },
+    create: {
+      puuid: riotAccount.puuid,
+      gameName: riotAccount.gameName,
+      tagLine: riotAccount.tagLine,
+      region,
+    },
+    update: {
+      gameName: riotAccount.gameName,
+      tagLine: riotAccount.tagLine,
+      region,
+    },
+  });
+  return riotAccount;
+}
+
 // Business logic and database access for the Summoner entity.
 // Orchestrates the Riot-ID-first flow Riot recommends:
 //   Riot ID → Account v1 (puuid) → Summoner v4 by-puuid (summonerId).

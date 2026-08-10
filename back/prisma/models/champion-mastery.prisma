@@ -1,0 +1,32 @@
+// ChampionMastery — per-champion mastery for a player.
+// Riot's Champion Mastery v4 /by-puuid endpoint returns one entry per
+// champion the player has mastery on (~50-160 champions typically).
+//
+// puuid is DECOUPLED (matches MatchParticipant + LeagueEntry pattern) —
+// NOT a FK to Account. Mastery data can be stored for any player we
+// encounter. Accounts backfill lazily on search. Per AGENTS.md §5a.
+//
+// We persist the essential fields; the nested nextSeasonMilestone JSON
+// from Riot's response is dropped — UI-helper data, not needed for the
+// stats page.
+model ChampionMastery {
+  puuid                          String   @map("puuid")
+  championId                     Int      @map("champion_id")
+  championLevel                  Int      @map("champion_level")
+  championPoints                 Int      @map("champion_points")
+  lastPlayTime                   DateTime @map("last_play_time")
+  championPointsSinceLastLevel   Int?     @map("champion_points_since_last_level")
+  championPointsUntilNextLevel   Int?     @map("champion_points_until_next_level")
+  markRequiredForNextLevel       Int?     @map("mark_required_for_next_level")
+  tokensEarned                   Int?     @map("tokens_earned")
+  championSeasonMilestone        Int?     @map("champion_season_milestone")
+  updatedAt                      DateTime @updatedAt @map("updated_at")
+
+  // One row per player per champion — idempotent upsert on refetch.
+  @@id([puuid, championId])
+  // Fast "all mastery entries for this player" query.
+  @@index([puuid])
+  // Future champion-level analytics (e.g., average mastery per champion).
+  @@index([championId])
+  @@map("champion_masteries")
+}
