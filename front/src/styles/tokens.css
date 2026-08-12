@@ -1,0 +1,92 @@
+/* Design tokens — Option B "Match Card"
+ *
+ * Distinctive direction: warm off-black instead of neutral zinc; gold used
+ * with restraint (KDA + mastery numbers only, never decoration); match
+ * detail will be a diptych of team-color zones (reserved for PR #9).
+ * Type: Sora for body, JetBrains Mono for big numbers (the data-terminal
+ * feel that differentiates this site from generic neon dashboard stats).
+ *
+ * Built against the frontend-design skill's principle: spend boldness in
+ * one place, keep everything around it quiet.
+ */
+
+:root {
+  /* Surfaces — warm parchment-shifted dark, not neutral */
+  --surface-0: #15110c;   /* deep warm black (page bg) */
+  --surface-1: #21190f;   /* raised card */
+  --surface-2: #2a1f12;   /* hover/active surface */
+  --hairline:  #3a2f1c;   /* warm hairline border */
+  --hairline-strong: #4d3e26;
+
+  /* Single restrained accent */
+  --gold:      #c8aa6e;   /* KDA + mastery numbers only */
+  --gold-dim:  #8a784f;
+
+  /* Team colors — reserved for PR #9 match detail diptych, surfaced here
+   * so the Profile page can use them on win/loss contrast if needed. */
+  --blue-team: #2095dd;
+  --red-team:  #e84057;
+  --win:       var(--blue-team);
+  --loss:      var(--red-team);
+
+  /* Tier colors — used by RankedBadge (PR #8 Profile page stripe) */
+  --tier-iron:       #5b5a55;
+  --tier-bronze:     #8c523a;
+  --tier-silver:     #80969a;
+  --tier-gold:       #f0b234;
+  --tier-platinum:   #5d8af6;
+  --tier-emerald:    #2dbf65;
+  --tier-diamond:    #5d76cb;
+  --tier-master:     #8467c7;
+  --tier-grandmaster: #c93b3b;
+  --tier-challenger: #5d8af6;
+
+  /* Type stack */
+  --font-display: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-body:    "Sora", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Type scale — fluid via clamp */
+  --step-1: clamp(0.875rem, 0.833rem + 0.2vw, 1rem);
+  --step-2: clamp(1rem,    0.917rem + 0.4vw, 1.25rem);
+  --step-3: clamp(1.25rem, 1.125rem + 0.6vw, 1.5rem);
+  --step-4: clamp(1.5rem,  1.333rem + 0.8vw, 2rem);
+  --step-5: clamp(2rem,    1.667rem + 1.6vw, 3rem);
+  --step-6: clamp(2.5rem,  2rem + 2.4vw,    4rem);
+
+  /* Spacing — 4px base, derived via module */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* Radii — minimal; this aesthetic reads better with subtle curves */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  /* Type colors */
+  --text-display: #f0e6d2;  /* parchment cream — display + headings */
+  --text-body:    #c8b890;  /* warm body */
+  --text-muted:   #8a7d5a;  /* captions, secondary */
+  --text-link:    var(--gold);
+  --text-link-hover: #e3c894;
+
+  /* Motion */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration: 250ms;
+
+  /* Layout */
+  --content-max: 1024px;
+  --content-pad: var(--space-4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration: 0ms;
+  }
+}

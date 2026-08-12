@@ -36,8 +36,8 @@ describe('GET /api/v1/static/*', () => {
     (ddragonClient.getVersion as ReturnType<typeof vi.fn>).mockReturnValueOnce('16.15.1');
     (ddragonClient.getChampions as ReturnType<typeof vi.fn>).mockReturnValueOnce(
       new Map([
-        [266, { key: 266, name: 'Aatrox', title: 'the Darkin Blade', tags: ['Fighter'] }],
-        [157, { key: 157, name: 'Ahri', title: 'the Nine-Tailed Fox', tags: ['Mage', 'Assassin'] }],
+        [266, { key: 266, id: 'Aatrox', name: 'Aatrox', title: 'the Darkin Blade', tags: ['Fighter'] }],
+        [157, { key: 157, id: 'Ahri', name: 'Ahri', title: 'the Nine-Tailed Fox', tags: ['Mage', 'Assassin'] }],
       ]),
     );
 

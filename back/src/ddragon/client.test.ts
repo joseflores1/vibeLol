@@ -33,8 +33,8 @@ describe('ddragon/client', () => {
       .mockResolvedValueOnce(
         new Response(JSON.stringify({
           data: {
-            Aatrox: { key: '266', name: 'Aatrox', title: 'the Darkin Blade', tags: ['Fighter'] },
-            Ahri: { key: '157', name: 'Ahri', title: 'the Nine-Tailed Fox', tags: ['Mage', 'Assassin'] },
+            Aatrox: { id: 'Aatrox', key: '266', name: 'Aatrox', title: 'the Darkin Blade', tags: ['Fighter'] },
+            Ahri: { id: 'Ahri', key: '157', name: 'Ahri', title: 'the Nine-Tailed Fox', tags: ['Mage', 'Assassin'] },
           },
         }), { status: 200 }),
       )
@@ -74,10 +74,10 @@ describe('ddragon/client', () => {
 
       const champs = ddragonClient.getChampions();
       expect(champs.get(266)).toEqual({
-        key: 266, name: 'Aatrox', title: 'the Darkin Blade', tags: ['Fighter'],
+        key: 266, id: 'Aatrox', name: 'Aatrox', title: 'the Darkin Blade', tags: ['Fighter'],
       });
       expect(champs.get(157)).toEqual({
-        key: 157, name: 'Ahri', title: 'the Nine-Tailed Fox', tags: ['Mage', 'Assassin'],
+        key: 157, id: 'Ahri', name: 'Ahri', title: 'the Nine-Tailed Fox', tags: ['Mage', 'Assassin'],
       });
     });
 
@@ -196,7 +196,7 @@ describe('ddragon/client', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify([version]), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         data: {
-          Aatrox: { key: '266', name: 'Aatrox', title: 'the Darkin Blade', tags: ['Fighter'] },
+          Aatrox: { id: 'Aatrox', key: '266', name: 'Aatrox', title: 'the Darkin Blade', tags: ['Fighter'] },
         },
       }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ data: {} }), { status: 200 }))

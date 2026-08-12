@@ -13,6 +13,7 @@ const DDRAGON_BASE = 'https://ddragon.leagueoflegends.com';
 const versionsSchema = z.array(z.string());
 
 const championDataSchema = z.object({
+  id: z.string(),
   key: z.string(),
   name: z.string(),
   title: z.string(),
@@ -56,6 +57,9 @@ type SpellDataParsed = z.infer<typeof spellDataSchema>;
 
 export interface Champion {
   key: number;
+  // Alphabetic ID used for Data Dragon icon URLs (e.g., "Aatrox", "MonkeyKing").
+  // Distinct from `name` ("Wukong") — many champions share ID≠name.
+  id: string;
   name: string;
   title: string;
   tags: string[];
@@ -171,6 +175,7 @@ class DdragonClient {
         Number(champ.key),
         {
           key: Number(champ.key),
+          id: champ.id,
           name: champ.name,
           title: champ.title,
           tags: champ.tags,

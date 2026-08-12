@@ -1,0 +1,7 @@
+.profile-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface-2);
+}
