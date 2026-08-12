@@ -1,0 +1,54 @@
+.ranked-badge {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ranked-badge[data-tier="IRON"]         { border-left: 6px solid var(--tier-iron); }
+.ranked-badge[data-tier="BRONZE"]       { border-left: 6px solid var(--tier-bronze); }
+.ranked-badge[data-tier="SILVER"]       { border-left: 6px solid var(--tier-silver); }
+.ranked-badge[data-tier="GOLD"]         { border-left: 6px solid var(--tier-gold); }
+.ranked-badge[data-tier="PLATINUM"]     { border-left: 6px solid var(--tier-platinum); }
+.ranked-badge[data-tier="EMERALD"]      { border-left: 6px solid var(--tier-emerald); }
+.ranked-badge[data-tier="DIAMOND"]      { border-left: 6px solid var(--tier-diamond); }
+.ranked-badge[data-tier="MASTER"]       { border-left: 6px solid var(--tier-master); }
+.ranked-badge[data-tier="GRANDMASTER"]  { border-left: 6px solid var(--tier-grandmaster); }
+.ranked-badge[data-tier="CHALLENGER"]    { border-left: 6px solid var(--tier-challenger); }
+
+.ranked-badge .queue-label {
+  font-size: var(--step-1);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ranked-badge .tier-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+.ranked-badge .tier-name {
+  color: var(--text-display);
+  font-size: var(--step-3);
+  font-weight: 600;
+}
+.ranked-badge .tier-rank {
+  color: var(--text-muted);
+  font-family: var(--font-display);
+}
+.ranked-badge .lp {
+  font-family: var(--font-display);
+  color: var(--gold);
+  font-size: var(--step-2);
+  font-weight: 600;
+}
+.ranked-badge .winrate {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+}
+.ranked-badge .wins { color: var(--blue-team); }
+.ranked-badge .losses { color: var(--red-team); }

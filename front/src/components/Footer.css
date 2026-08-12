@@ -1,0 +1,11 @@
+.footer {
+  border-top: 1px solid var(--hairline);
+  margin-top: var(--space-7);
+  padding: var(--space-5) 0;
+  color: var(--text-muted);
+  font-size: var(--step-1);
+}
+.footer p {
+  max-width: 65ch;
+  line-height: 1.6;
+}
