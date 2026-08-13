@@ -2,10 +2,8 @@ import { SearchBar } from "../components/SearchBar";
 import { Footer } from "../components/Footer";
 import "./Home.css";
 
-// Home — search-first landing. Per the frontend-design skill: the hero is a
-// thesis. Here the thesis is "this site exists to look up players." No
-// decorative hero image, no gradient blob — the search bar IS the hero.
-//.oneshot
+// Home — search-first landing. The hero IS the search bar (no decorative
+// image, per frontend-design skill's restraint principle).
 export function HomePage() {
   return (
     <>

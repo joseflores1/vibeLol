@@ -1,7 +1,8 @@
 .footer {
-  border-top: 1px solid var(--hairline);
+  background: var(--footer-bg, #100c08);
+  border-top: 1px solid var(--hairline-strong);
   margin-top: var(--space-7);
-  padding: var(--space-5) 0;
+  padding: var(--space-6) 0;
   color: var(--text-muted);
   font-size: var(--step-1);
 }

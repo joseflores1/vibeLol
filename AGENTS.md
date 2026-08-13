@@ -435,3 +435,103 @@ CI (`.github/workflows/ci.yml`) runs on every push to `main` and on every
 pull request to `main`: backend (typecheck + tests + build, postgres service
 container) and frontend (lint + tests + build). Tests mock the Riot layer —
 `RIOT_API_KEY` is intentionally **not** set in CI.
+
+## 12. Frontend Design System
+
+The vibeLol frontend follows "Option B — Match Card": a distinctive
+warm-parchment off-black palette with gold reserved for numerals, mono-
+space display type for big numbers, and tier-color stripes as the
+signature visual anchor. This is NOT a generic neon LoL dashboard.
+
+### Palette (from `front/src/styles/tokens.css`)
+
+| Token            | Hex       | Usage                                    |
+|------------------|-----------|------------------------------------------|
+| `--surface-0`    | `#15110c` | Page background (warm off-black)         |
+| `--surface-1`    | `#21190f` | Raised card                               |
+| `--surface-2`    | `#2a1f12` | Hover / active                           |
+| `--hairline`      | `#3a2f1c` | Border                                   |
+| `--gold`         | `#c8aa6e` | KDA, LP, mastery numbers ONLY (no decoration) |
+| `--blue-team`    | `#2095dd` | Win / blue-side                          |
+| `--red-team`     | `#e84057` | Loss / red-side                           |
+| `--text-display` | `#f0e6d2` | Parchment cream — headings               |
+| `--text-body`    | `#c8b890` | Warm body                                 |
+| `--text-muted`   | `#8a7d5a` | Captions / secondary                      |
+| `--footer-bg`    | `#100c08` | High-contrast footer                      |
+
+Tier colors: Iron `#5b5a55`, Bronze `#8c523a`, Silver `#80969a`, Gold
+`#f0b234`, Platinum `#5d8af6`, Emerald `#2dbf65`, Diamond `#5d76cb`,
+Master `#8467c7`, Grandmaster `#c93b3b`, Challenger `#5d8af6`.
+
+### Typography
+
+- **Display face:** JetBrains Mono — big numerals (level, LP, KDA,
+  mastery points, winrate %). This is the signature element.
+- **Body face:** Sora — prose, labels, navigation.
+- Fluid `clamp()` type scale, step-1 through step-6.
+
+### Icon URL templates
+
+| Asset       | URL template                                                                   |
+|-------------|--------------------------------------------------------------------------------|
+| Profile     | `https://ddragon.leagueoflegends.com/cdn/{version}/img/profileicon/{id}.png`   |
+| Champion    | `https://ddragon.leagueoflegends.com/cdn/{version}/img/champion/{id}.png`       |
+|             | (`id` = alphabetic ID, e.g., `MonkeyKing` for Wukong, from /static/champions) |
+| Item        | `https://ddragon.leagueoflegends.com/cdn/{version}/img/item/{id}.png`          |
+| Spell       | `https://ddragon.leagueoflegends.com/cdn/{version}/img/spell/{key}.png`        |
+| Rank crest  | `https://raw.githubusercontent.com/communitydragon/communitydragon-assets/master/assets/images/rankedcrests/24.6.1/24.6.1_{tier-lowercase}.png` |
+
+### Region display map
+
+Riot's platform codes (na1, la1, la2) aren't user-friendly. Show both the
+code and a display name in the dropdown and the profile region pill:
+
+```
+NA1 — North America     BR1 — Brazil          LA1 — Latin America North
+LA2 — Latin America South  OC1 — Oceania       EUW1 — Europe West
+EUN1 — Europe Nordic & East  TR1 — Türkiye       RU — Russia
+KR — Korea              JP1 — Japan           PH2 — Philippines
+SG2 — Singapore         TH2 — Thailand        TW2 — Taiwan
+VN2 — Vietnam
+```
+
+Dropdown: `<option value="na1">NA1 — North America</option>`.
+Profile chip: `NA1 · North America` (compact pill).
+
+### Structural conventions (absorbed from reference sites)
+
+From **u.gg** (triple-column shell + dense match cards):
+- Persistent top nav shell (54px, search integrated).
+- Profile page: sidebar 30% (ranked + mastery), main 70% (match history).
+- Match cards: 96px height, 4px left-edge team-color stripe (blue/red).
+- Segmented tab filter: All / Ranked Solo / Ranked Flex / Normal.
+
+From **lolalytics** (information density):
+- Monospace decimals aligning vertically in tables.
+- Tight row padding for density.
+- (Reserved: delta arrows for patch-over-patch comparisons — future phase.)
+
+From **Stitch mock** (Image 1):
+- High-contrast footer with distinct background + top border.
+- 96px gold-bordered profile icon with 12px radius.
+- Level pill overlaid on the icon's bottom-center.
+- Community Dragon tier crest inset (80px) in ranked cards.
+- 2×3 mastery card grid (not a flat list).
+
+### Restraint principles
+
+1. **Gold is for numerals only** — never decoration, never borders (except
+   the profile icon), never backgrounds. KDA, LP, mastery points, level,
+   winrate % → gold. Everything else → parchment or muted.
+2. **No gradient blobs, glow filters, or drop shadows.**
+3. **Empty states are invitations** — "No ranked games this season." with
+   the search bar visible, not a sad-face emoji. Never "Oops."
+4. **Errors never apologize** — state exactly what went wrong + HTTP status
+   + a "Try again" button. Never vague "Something went wrong."
+5. **Visible keyboard focus** — 2px gold outline on focus-visible.
+6. **`prefers-reduced-motion` respected** — no decorative animation for
+   users who disable it.
+7. **Responsive down to 360px** — sidebar + main stack vertically, tables
+   scroll, type scale holds.
+8. **No puuids in URLs** — Riot IDs only (per §5a).
+9. **Riot Games attribution in every footer** — required by ToS.
