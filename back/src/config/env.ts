@@ -18,6 +18,8 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   databaseUrl: requireEnv('DATABASE_URL'),
   riotApiKey: requireEnv('RIOT_API_KEY'),
+  riotRateLimitPer100s: Math.max(1, Number(process.env.RIOT_RATE_LIMIT_PER_100S ?? 20)),
+  riotMaxRetries: Math.max(0, Number(process.env.RIOT_MAX_RETRIES ?? 3)),
 } as const;
 
 export const isProduction = env.nodeEnv === 'production';

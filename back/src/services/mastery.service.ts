@@ -2,6 +2,7 @@ import { prisma } from '../lib/client.js';
 import { getByPuuid, getByChampion, type RiotMasteryEntry } from '../riot/mastery.api.js';
 import { resolveAndCacheAccount } from './summoner.service.js';
 import type { RiotRegion } from '../riot/client.js';
+import { isStale, TTL } from '../lib/staleness.js';
 
 // Business logic and database access for Champion Mastery.
 // Orchestrates: Riot ID → Account v1 (puuid) → Champion Mastery v4.
@@ -13,6 +14,15 @@ export const masteryService = {
   // mastery data (e.g., brand-new account). Frontend sorts/slices locally.
   async findByRiotId(region: RiotRegion, gameName: string, tagLine: string) {
     const riotAccount = await resolveAndCacheAccount(region, gameName, tagLine);
+
+    const cachedMasteries = await prisma.championMastery.findMany({
+      where: { puuid: riotAccount.puuid },
+      orderBy: { championPoints: 'desc' },
+    });
+    if (cachedMasteries[0] && !isStale(cachedMasteries[0].updatedAt, TTL.mastery)) {
+      return { puuid: riotAccount.puuid, masteries: cachedMasteries };
+    }
+
     const riotMasteries: RiotMasteryEntry[] = await getByPuuid(region, riotAccount.puuid);
 
     for (const m of riotMasteries) {
@@ -45,6 +55,17 @@ export const masteryService = {
       });
     }
 
+    if (riotMasteries.length === 0) {
+      await prisma.championMastery.deleteMany({ where: { puuid: riotAccount.puuid } });
+    } else {
+      await prisma.championMastery.deleteMany({
+        where: {
+          puuid: riotAccount.puuid,
+          championId: { notIn: riotMasteries.map((mastery) => mastery.championId) },
+        },
+      });
+    }
+
     const masteries = await prisma.championMastery.findMany({
       where: { puuid: riotAccount.puuid },
       orderBy: { championPoints: 'desc' },
@@ -62,6 +83,13 @@ export const masteryService = {
     championId: number,
   ) {
     const riotAccount = await resolveAndCacheAccount(region, gameName, tagLine);
+    const cachedMastery = await prisma.championMastery.findUnique({
+      where: { puuid_championId: { puuid: riotAccount.puuid, championId } },
+    });
+    if (cachedMastery && !isStale(cachedMastery.updatedAt, TTL.mastery)) {
+      return { puuid: riotAccount.puuid, mastery: cachedMastery };
+    }
+
     const riotMastery: RiotMasteryEntry = await getByChampion(
       region,
       riotAccount.puuid,

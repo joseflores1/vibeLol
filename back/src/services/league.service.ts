@@ -2,6 +2,7 @@ import { prisma } from '../lib/client.js';
 import { getEntriesByPuuid, type RiotLeagueEntry } from '../riot/league.api.js';
 import { resolveAndCacheAccount } from './summoner.service.js';
 import type { RiotRegion } from '../riot/client.js';
+import { isStale, TTL } from '../lib/staleness.js';
 
 // Business logic and database access for League (ranked) entries.
 // Orchestrates: Riot ID → Account v1 (puuid) → League v4 entries/by-puuid.
@@ -16,6 +17,15 @@ export const leagueService = {
     tagLine: string,
   ) {
     const riotAccount = await resolveAndCacheAccount(region, gameName, tagLine);
+
+    const cachedEntries = await prisma.leagueEntry.findMany({
+      where: { puuid: riotAccount.puuid },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (cachedEntries[0] && !isStale(cachedEntries[0].updatedAt, TTL.league)) {
+      return { puuid: riotAccount.puuid, entries: cachedEntries };
+    }
+
     const riotEntries: RiotLeagueEntry[] = await getEntriesByPuuid(region, riotAccount.puuid);
 
     // Upsert each entry (idempotent via @@id([puuid, queueType])).
@@ -47,6 +57,17 @@ export const leagueService = {
           inactive: e.inactive,
           freshBlood: e.freshBlood,
           hotStreak: e.hotStreak,
+        },
+      });
+    }
+
+    if (riotEntries.length === 0) {
+      await prisma.leagueEntry.deleteMany({ where: { puuid: riotAccount.puuid } });
+    } else {
+      await prisma.leagueEntry.deleteMany({
+        where: {
+          puuid: riotAccount.puuid,
+          queueType: { notIn: riotEntries.map((entry) => entry.queueType) },
         },
       });
     }

@@ -1,14 +1,31 @@
 import { prisma } from '../lib/client.js';
-import { getByRiotId } from '../riot/account.api.js';
 import { getMatchIdsByPuuid, getMatch, type MatchListOptions } from '../riot/match.api.js';
 import type { RiotRegion, RiotCluster } from '../riot/client.js';
-import { clusterFromRegion } from './summoner.service.js';
+import { clusterFromRegion, resolveAndCacheAccount } from './summoner.service.js';
+import { isStale, TTL } from '../lib/staleness.js';
+
+interface MatchListCacheEntry {
+  fetchedAt: Date;
+  result: { puuid: string; matchIds: string[] };
+}
+
+const matchListCache = new Map<string, MatchListCacheEntry>();
+const MAX_MATCH_LIST_CACHE_ENTRIES = 1000;
+
+function matchListCacheKey(
+  region: RiotRegion,
+  gameName: string,
+  tagLine: string,
+  opts: MatchListOptions,
+) {
+  return JSON.stringify([region, gameName, tagLine, opts]);
+}
 
 // Business logic and database access for Match entities.
 // Orchestrates: Riot ID → Account v1 (puuid) → Match v5 (list/detail).
 // Match detail is cached in Postgres (idempotent upsert keyed on matchId +
-// @@unique([matchId, puuid]) for participants). Match ID list is not
-// cached (cheap — just a string[] from Riot, no persistence needed).
+// @@unique([matchId, puuid]) for participants). Match ID lists use a bounded
+// process-local TTL cache because the list has no persistence model.
 // Throws ApiError for expected failures so controllers stay thin.
 export const matchService = {
   // Resolves a Riot ID + region to a list of match IDs from Riot.
@@ -20,27 +37,21 @@ export const matchService = {
     tagLine: string,
     opts: MatchListOptions = {},
   ) {
+    const key = matchListCacheKey(region, gameName, tagLine, opts);
+    const cached = matchListCache.get(key);
+    if (cached && !isStale(cached.fetchedAt, TTL.matchList)) return cached.result;
+
     const cluster: RiotCluster = clusterFromRegion(region);
-    const riotAccount = await getByRiotId(cluster, gameName, tagLine);
+    const riotAccount = await resolveAndCacheAccount(region, gameName, tagLine);
     const matchIds = await getMatchIdsByPuuid(cluster, riotAccount.puuid, opts);
-
-    // Persist the Account so future lookups are cached.
-    await prisma.account.upsert({
-      where: { puuid: riotAccount.puuid },
-      create: {
-        puuid: riotAccount.puuid,
-        gameName: riotAccount.gameName,
-        tagLine: riotAccount.tagLine,
-        region,
-      },
-      update: {
-        gameName: riotAccount.gameName,
-        tagLine: riotAccount.tagLine,
-        region,
-      },
-    });
-
-    return { puuid: riotAccount.puuid, matchIds };
+    const result = { puuid: riotAccount.puuid, matchIds };
+    matchListCache.delete(key);
+    matchListCache.set(key, { fetchedAt: new Date(), result });
+    if (matchListCache.size > MAX_MATCH_LIST_CACHE_ENTRIES) {
+      const oldest = matchListCache.keys().next().value;
+      if (oldest) matchListCache.delete(oldest);
+    }
+    return result;
   },
 
   // Fetches a single match by matchId. Checks the DB cache first; on miss,

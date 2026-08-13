@@ -1,5 +1,6 @@
 import { env } from '../config/env.js';
 import { ApiError } from '../utils/ApiError.js';
+import { createRateLimiter } from '../lib/rate-limiter.js';
 
 // Riot clusters (account/match-level routing): continental groupings.
 export type RiotCluster = 'americas' | 'europe' | 'asia' | 'sea';
@@ -22,8 +23,8 @@ interface RiotErrorPayload {
   message?: string;
 }
 
-// Sleep helper —Honors Riot's Retry-After header (in seconds) on 429s.
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const rateLimiter = createRateLimiter(env.riotRateLimitPer100s);
 
 // Builds the full URL for a given routing value + path (path starts with "/").
 function buildUrl(routing: RiotRouting, path: string): string {
@@ -38,26 +39,27 @@ function describeError(status: number, body: unknown): string {
   return `Riot API ${status}: ${message}`;
 }
 
-// Core request runner. Sends X-Riot-Token, retries once on 429 honoring
-// Retry-After, and throws ApiError for any non-2xx outcome. Pure HTTP —
-// no Prisma, no business logic — so the Riot layer stays mockable.
 async function request<T>(routing: RiotRouting, path: string): Promise<T> {
   const url = buildUrl(routing, path);
   const headers = { 'X-Riot-Token': env.riotApiKey };
 
-  const run = async (): Promise<T> => {
+  for (let attempt = 0; ; attempt += 1) {
+    await rateLimiter.acquire();
     const res = await fetch(url, { headers });
-    if (res.status === 429) {
-      // Riot requires honoring Retry-After (seconds); retry once after the wait.
-      const retryAfter = Number(res.headers.get('Retry-After') ?? 1);
-      await sleep(retryAfter * 1000);
-      const retryRes = await fetch(url, { headers });
-      return handleResponse<T>(retryRes);
-    }
-    return handleResponse<T>(res);
-  };
 
-  return run();
+    const retryable = res.status === 429 || res.status >= 500;
+    if (!retryable || attempt >= env.riotMaxRetries) {
+      return handleResponse<T>(res);
+    }
+
+    const retryAfter = res.status === 429
+      ? Number(res.headers.get('Retry-After') ?? 1)
+      : Number.NaN;
+    const delay = Number.isFinite(retryAfter) && retryAfter >= 0
+      ? retryAfter * 1000
+      : Math.min(1000 * (2 ** attempt), 16_000);
+    await sleep(delay);
+  }
 }
 
 // Maps an HTTP response into typed data or an ApiError. 404 → notFound.
@@ -82,7 +84,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
     throw ApiError.unauthorized(describeError(res.status, body));
   }
   if (res.status === 429) {
-    // Still rate-limited after the single retry — surface as a 429 to clients.
+    // Still rate-limited after all configured retries — surface as 429.
     return Promise.reject(
       new ApiError(429, describeError(res.status, body)),
     );
