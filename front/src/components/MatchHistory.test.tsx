@@ -1,0 +1,147 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
+import { MatchHistory } from "./MatchHistory";
+import type { Champion, MatchDetail } from "../types/api";
+
+// Mock apiGet so useMatchIds + the per-detail queryFn resolve deterministically.
+vi.mock("../lib/api", () => ({
+  apiGet: vi.fn(async (path: string) => {
+    if (path.endsWith("/matches")) {
+      return {
+        puuid: "abc123",
+        matchIds: ["NA1_1", "NA1_2"],
+      };
+    }
+    // /matches/:matchId
+    const matchId = path.split("/").pop() ?? "";
+    return {
+      matchId,
+      dataVersion: "2",
+      gameCreation: "2025-08-01T00:00:00.000Z",
+      gameDuration: 600,
+      gameStartTimestamp: "2025-08-01T00:00:00.000Z",
+      gameEndTimestamp: "2025-08-01T00:10:00.000Z",
+      gameMode: "CLASSIC",
+      gameType: "MATCHED_GAME",
+      gameVersion: "15.8.1",
+      mapId: 11,
+      queueId: 420,
+      participants: [
+        {
+          id: `p-${matchId}`,
+          matchId,
+          puuid: "abc123",
+          championId: 89,
+          championName: "MonkeyKing",
+          kills: 3,
+          deaths: 1,
+          assists: 2,
+          goldEarned: 7000,
+          item0: 3071,
+          item1: 3047,
+          item2: 3074,
+          item3: null,
+          item4: null,
+          item5: null,
+          item6: 3364,
+          summoner1Id: 4,
+          summoner2Id: 14,
+          teamId: 100,
+          win: true,
+          visionScore: 5,
+          wardsPlaced: 3,
+          wardsKilled: 0,
+          totalMinionsKilled: 80,
+        },
+      ],
+    } satisfies MatchDetail;
+  }),
+}));
+
+import { apiGet } from "../lib/api";
+
+const championMap = new Map<number, Champion>([
+  [89, { key: 89, id: "MonkeyKing", name: "Wukong", title: "the Monkey King", tags: [] }],
+]);
+
+function withProviders(node: React.ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 0, gcTime: 0 } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{node}</MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe("<MatchHistory />", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders two MatchCards once the matchIds + queries resolve", async () => {
+    withProviders(
+      <MatchHistory
+        gameName="Faker"
+        tagLine="420"
+        region="na1"
+        puuid="abc123"
+        version="15.8.1"
+        championMap={championMap}
+        activeTab="all"
+        onTabChange={() => {}}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Victory").length).toBe(2);
+    });
+    expect(screen.getAllByText("3/1/2").length).toBe(2);
+    expect(apiGet).toHaveBeenCalledWith(expect.stringContaining("/matches"), expect.anything());
+  });
+
+  it("renders an EmptyState when the matchIds list is empty", async () => {
+    vi.mocked(apiGet).mockResolvedValueOnce({ puuid: "abc123", matchIds: [] });
+    withProviders(
+      <MatchHistory
+        gameName="Nobody"
+        tagLine="000"
+        region="na1"
+        puuid="abc123"
+        version="15.8.1"
+        championMap={championMap}
+        activeTab="all"
+        onTabChange={() => {}}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText("No matches found.")).toBeDefined();
+    });
+  });
+
+  it("renders an ErrorState when the matchIds call rejects", async () => {
+    vi.mocked(apiGet).mockRejectedValueOnce({
+      success: false,
+      message: "Riot API timeout",
+      status: 504,
+    });
+    withProviders(
+      <MatchHistory
+        gameName="Error"
+        tagLine="000"
+        region="na1"
+        puuid="abc123"
+        version="15.8.1"
+        championMap={championMap}
+        activeTab="all"
+        onTabChange={() => {}}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText("Couldn't load match history")).toBeDefined();
+    });
+  });
+});

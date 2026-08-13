@@ -73,3 +73,55 @@ export interface StaticChampionsResponse {
   version: string;
   champions: Champion[];
 }
+
+// Single participant row in a match — mirrors MatchParticipant Prisma model.
+export interface MatchParticipant {
+  id: string;
+  matchId: string;
+  puuid: string;
+  championId: number;
+  championName: string;
+  kills: number;
+  deaths: number;
+  assists: number;
+  goldEarned: number;
+  item0: number | null;
+  item1: number | null;
+  item2: number | null;
+  item3: number | null;
+  item4: number | null;
+  item5: number | null;
+  item6: number | null;
+  summoner1Id: number;
+  summoner2Id: number;
+  teamId: number;
+  win: boolean;
+  visionScore: number | null;
+  wardsPlaced: number | null;
+  wardsKilled: number | null;
+  totalMinionsKilled: number | null;
+}
+
+// Full match detail — cached in Postgres on the backend.
+export interface MatchDetail {
+  matchId: string;
+  dataVersion: string | null;
+  gameCreation: string;
+  gameDuration: number;
+  gameStartTimestamp: string;
+  gameEndTimestamp: string | null;
+  gameMode: string;
+  gameType: string;
+  gameVersion: string | null;
+  mapId: number | null;
+  queueId: number | null;
+  participants: MatchParticipant[];
+}
+
+// GET /summoners/by-riot-id/:g/:t/matches returns { puuid, matchIds }.
+// The puuid lets the frontend identify "your row" in each match's
+// participant list without an extra round-trip.
+export interface MatchIdsResponse {
+  puuid: string;
+  matchIds: string[];
+}

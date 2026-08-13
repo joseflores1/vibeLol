@@ -9,6 +9,8 @@ import type {
   LeagueResponse,
   MasteryResponse,
   StaticChampionsResponse,
+  MatchIdsResponse,
+  MatchDetail,
 } from "../types/api";
 
 // -- Types ---
@@ -99,5 +101,64 @@ export function useStaticChampions() {
     queryKey: ["static", "champions"],
     queryFn: () => apiGet<StaticChampionsResponse>("/static/champions"),
     staleTime: Infinity,
+  });
+}
+
+// -- Match history (Phase 3b) --
+
+export interface MatchListQueryOpts {
+  queue?: number;
+  type?: string;
+  start?: number;
+  count?: number;
+}
+
+// Fetches the list of match IDs for a summoner. The `opts` shape mirrors
+// the backend's matchListQuerySchema — when a Tab filter is applied, the
+// queue/type param changes and TanStack Query refetches under a fresh key.
+// Default count=10 keeps Riot dev-key rate limits in check on first load;
+// the backend caches each match detail on miss so subsequent views are
+// cheap (DB read, no Riot call).
+export function useMatchIds(
+  gameName: string,
+  tagLine: string,
+  region: RiotRegion,
+  opts: MatchListQueryOpts = {},
+) {
+  return useQuery({
+    queryKey: ["matchIds", gameName, tagLine, region, opts],
+    queryFn: () =>
+      apiGet<MatchIdsResponse>(
+        `/summoners/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}/matches`,
+        {
+          region,
+          start: opts.start,
+          count: opts.count,
+          queue: opts.queue,
+          type: opts.type,
+        },
+      ),
+    enabled: Boolean(gameName && tagLine),
+    staleTime: 60_000,
+  });
+}
+
+// Fetches one match detail (full 10-participant document). Cached by the
+// backend on first miss — repeat views are a Postgres read.
+export function useMatchDetail(
+  gameName: string,
+  tagLine: string,
+  region: RiotRegion,
+  matchId: string,
+) {
+  return useQuery({
+    queryKey: ["match", gameName, tagLine, region, matchId],
+    queryFn: () =>
+      apiGet<MatchDetail>(
+        `/summoners/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}/matches/${matchId}`,
+        { region },
+      ),
+    enabled: Boolean(gameName && tagLine && matchId),
+    staleTime: 300_000,
   });
 }
