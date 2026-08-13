@@ -1,8 +1,7 @@
 import "./Footer.css";
 
-// Footer with Riot Games attribution boilerplate — required by Riot's
-// Developer ToS (AGENTS.md §1 + §5a). Visible in the UI per the policy.
-// Text is the canonical phrase Riot requires, verbatim.
+// High-contrast footer with distinct background + top border (Stitch spec).
+// Riot Games attribution boilerplate — required by Riot ToS (AGENTS.md §1).
 export function Footer() {
   return (
     <footer className="footer">

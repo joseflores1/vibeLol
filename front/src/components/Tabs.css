@@ -1,0 +1,25 @@
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.tab {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--step-1);
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
+}
+.tab:hover { color: var(--text-body); }
+.tab.active {
+  color: var(--text-display);
+  border-bottom-color: var(--gold);
+}
+.tab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

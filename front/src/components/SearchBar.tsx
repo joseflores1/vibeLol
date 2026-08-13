@@ -1,19 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ALL_REGIONS, type RiotRegion } from "../hooks/useApi";
+import { REGIONS, type RiotRegion } from "../constants/regions";
 import "./SearchBar.css";
-
-// SearchBar — the persistent entry point across the whole site.
-//
-// Compound pattern (Vercel composition-patterns skill): the submit
-// handler emits an event via react-router navigation rather than
-// calling a parent prop. Lets any page host the bar without wiring.
-//
-// Per the frontend-design skill's writing guidance: the button says
-// "Search" (active verb, what happens when you press it), not "Submit".
-//
-//.oneshot — auto-routes to a missing-player 404 if Riot returns one;
-// the SummonerProfile page renders the empty/error states.
 
 interface SearchBarProps {
   initialGameName?: string;
@@ -77,8 +65,10 @@ export function SearchBar({
         value={region}
         onChange={(e) => setRegion(e.target.value as RiotRegion)}
       >
-        {ALL_REGIONS.map((r) => (
-          <option key={r} value={r}>{r.toUpperCase()}</option>
+        {REGIONS.map((r) => (
+          <option key={r.code} value={r.code}>
+            {r.code.toUpperCase()} — {r.name}
+          </option>
         ))}
       </select>
 
