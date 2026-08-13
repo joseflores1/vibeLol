@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { riotGet, type RiotCluster } from './client.js';
+import { createRateLimiter } from '../lib/rate-limiter.js';
 
 // Unit tests for the Riot HTTP wrapper. Mocks global fetch so no network
 // calls are made and no real Riot key is needed. Covers the critical
@@ -14,6 +15,7 @@ describe('riot/client', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -34,7 +36,7 @@ describe('riot/client', () => {
     expect(data).toEqual({ puuid: 'abc' });
   });
 
-  it('retries once on 429, honoring Retry-After', async () => {
+  it('retries on 429, honoring Retry-After', async () => {
     vi.useFakeTimers();
     fetchMock
       .mockResolvedValueOnce(new Response('rate', { status: 429, headers: { 'Retry-After': '2' } }))
@@ -44,7 +46,6 @@ describe('riot/client', () => {
     const data = await p;
     expect(data).toEqual({ ok: true });
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    vi.useRealTimers();
   });
 
   it('throws ApiError.notFound (404) on Riot 404', async () => {
@@ -67,14 +68,20 @@ describe('riot/client', () => {
     });
   });
 
-  it('throws ApiError with status on 500', async () => {
-    fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ status: { message: 'boom' } }), { status: 500 }),
-    );
-    await expect(riotGet(cluster, '/x')).rejects.toMatchObject({
+  it('retries 5xx responses with exponential backoff before failing', async () => {
+    vi.useFakeTimers();
+    for (let i = 0; i < 4; i += 1) {
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: { message: 'boom' } }), { status: 500 }),
+      );
+    }
+    const request = expect(riotGet(cluster, '/x')).rejects.toMatchObject({
       statusCode: 500,
       name: 'ApiError',
     });
+    await vi.advanceTimersByTimeAsync(7000);
+    await request;
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   it('forges the URL from routing value + path', async () => {
@@ -82,5 +89,22 @@ describe('riot/client', () => {
     await riotGet(cluster, '/riot/account/v1/accounts/by-riot-id/A/B');
     const [url] = fetchMock.mock.calls[0]!;
     expect(url).toBe('https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/A/B');
+  });
+
+  it('spaces requests after the token bucket is empty', async () => {
+    vi.useFakeTimers();
+    const limiter = createRateLimiter(2, 1000);
+    const first = limiter.acquire();
+    const second = limiter.acquire();
+    const third = limiter.acquire();
+    await Promise.all([first, second]);
+
+    let completed = false;
+    void third.then(() => { completed = true; });
+    await vi.advanceTimersByTimeAsync(499);
+    expect(completed).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await third;
+    expect(completed).toBe(true);
   });
 });

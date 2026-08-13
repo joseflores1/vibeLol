@@ -3,6 +3,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { getByRiotId, type RiotAccount } from '../riot/account.api.js';
 import { getByPuuid, type RiotSummoner } from '../riot/summoner.api.js';
 import type { RiotCluster, RiotRegion } from '../riot/client.js';
+import { isStale, TTL } from '../lib/staleness.js';
 
 // Maps a region (na1/euw1/kr/…) to its cluster (americas/europe/asia).
 // Per Riot's routing values table. Used to route Account v1 (cluster-routed)
@@ -21,16 +22,20 @@ export function clusterFromRegion(region: RiotRegion): RiotCluster {
   }
 }
 
-// Shared Riot-ID-first helper: looks up the Riot ID via Account v1, returns
-// the { puuid, riotAccount }, and upserts the Account so future lookups
-// are cached. Used by league + mastery services (match.service has its own
-// inline upsert — left as-is to avoid touching working code).
+// Shared Riot-ID-first helper: reads a fresh Account cache row when available,
+// otherwise resolves the Riot ID through Account v1 and persists it. Used by
+// league, mastery, and match services.
 // Throws Riot 404s as ApiError.notFound (propagated from riotGet).
 export async function resolveAndCacheAccount(
   region: RiotRegion,
   gameName: string,
   tagLine: string,
 ): Promise<RiotAccount> {
+  const cached = await prisma.account.findUnique({
+    where: { gameName_tagLine: { gameName, tagLine } },
+  });
+  if (cached && !isStale(cached.updatedAt, TTL.account)) return cached;
+
   const riotAccount = await getByRiotId(clusterFromRegion(region), gameName, tagLine);
   await prisma.account.upsert({
     where: { puuid: riotAccount.puuid },
@@ -60,46 +65,45 @@ export const summonerService = {
   // Summoner v4 is region-routed and a Riot ID alone doesn't tell you
   // the region (matches op.gg/lolalytics UX: user picks a region).
   async findByRiotId(region: RiotRegion, gameName: string, tagLine: string) {
-    // 1. Account v1 — cluster-routed, returns puuid.
-    let riotAccount: RiotAccount;
-    try {
-      riotAccount = await getByRiotId(
-        clusterFromRegion(region),
-        gameName,
-        tagLine,
-      );
-    } catch (err) {
-      // 404s from Riot surface as ApiError.notFound — let them propagate.
-      throw err;
-    }
-
-    // 2. Summoner v4 — region-routed, keyed by puuid.
-    let riotSummoner: RiotSummoner;
-    try {
-      riotSummoner = await getByPuuid(region, riotAccount.puuid);
-    } catch (err) {
-      // A 404 here means the account has no summoner profile (rare but
-      // possible for brand-new accounts). Surface as notFound.
-      throw err;
-    }
-
-    // 3. Persist both in a transaction. Account.region is filled now that
-    // we know the region; Summoner is upserted keyed on summonerId.
-    const account = await prisma.account.upsert({
-      where: { puuid: riotAccount.puuid },
-      create: {
-        puuid: riotAccount.puuid,
-        gameName: riotAccount.gameName,
-        tagLine: riotAccount.tagLine,
-        region,
-      },
-      update: {
-        gameName: riotAccount.gameName,
-        tagLine: riotAccount.tagLine,
-        region,
-      },
+    const cachedAccount = await prisma.account.findUnique({
+      where: { gameName_tagLine: { gameName, tagLine } },
     });
+    const account = cachedAccount && !isStale(cachedAccount.updatedAt, TTL.account)
+      ? cachedAccount
+      : await (async () => {
+        const riotAccount = await getByRiotId(
+          clusterFromRegion(region),
+          gameName,
+          tagLine,
+        );
+        return prisma.account.upsert({
+          where: { puuid: riotAccount.puuid },
+          create: {
+            puuid: riotAccount.puuid,
+            gameName: riotAccount.gameName,
+            tagLine: riotAccount.tagLine,
+            region,
+          },
+          update: {
+            gameName: riotAccount.gameName,
+            tagLine: riotAccount.tagLine,
+            region,
+          },
+        });
+      })();
 
+    const cachedSummoner = await prisma.summoner.findUnique({
+      where: { puuid: account.puuid },
+    });
+    if (
+      cachedSummoner
+      && cachedSummoner.region === region
+      && !isStale(cachedSummoner.updatedAt, TTL.summoner)
+    ) {
+      return { account, summoner: cachedSummoner };
+    }
+
+    const riotSummoner: RiotSummoner = await getByPuuid(region, account.puuid);
     const summoner = await prisma.summoner.upsert({
       where: { puuid: riotSummoner.puuid },
       create: {

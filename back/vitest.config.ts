@@ -9,6 +9,8 @@ export default defineConfig({
     env: {
       DATABASE_URL: 'postgresql://test:test@localhost:5432/test?schema=public',
       RIOT_API_KEY: 'test-riot-key',
+      RIOT_RATE_LIMIT_PER_100S: '20',
+      RIOT_MAX_RETRIES: '3',
       PORT: '3001',
       NODE_ENV: 'test',
     },
