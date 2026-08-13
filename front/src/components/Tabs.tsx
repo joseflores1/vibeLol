@@ -15,8 +15,9 @@ interface TabsProps {
 }
 
 // Segmented tab filter (per u.gg structural convention, AGENTS.md §12).
-// Tabs are present but filter logic wires to the match-history backend
-// in Phase 3b. For now they're interactive (state-managed by the parent).
+// Filter state lives in the parent (SummonerProfile); the active tab is
+// passed down to MatchHistory, which maps it to backend queue/type params
+// via the TAB_TO_QUERY constant.
 export function Tabs({ active, onChange }: TabsProps) {
   return (
     <div className="tabs">

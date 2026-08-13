@@ -1,0 +1,140 @@
+.match-card {
+  display: grid;
+  grid-template-columns: 84px 84px 92px 1fr 132px 120px;
+  align-items: center;
+  gap: var(--space-3);
+  height: 96px;
+  padding: 0 var(--space-3) 0 calc(var(--space-3) - 4px);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  border-left-width: 4px;
+  border-left-color: var(--team-color, var(--hairline));
+  transition: background var(--duration-fast) var(--ease);
+}
+.match-card:hover { background: var(--surface-2); }
+.match-card.missing {
+  grid-template-columns: 1fr;
+  padding: var(--space-3);
+  color: var(--text-muted);
+  border-left-color: var(--hairline);
+}
+
+/* Victory / Defeat + duration column */
+.match-card .outcome {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.match-card.win .outcome .verdict { color: var(--blue-team); }
+.match-card.loss .outcome .verdict { color: var(--red-team); }
+.match-card .outcome .verdict {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.match-card .outcome .duration {
+  color: var(--text-muted);
+  font-size: var(--step-1);
+  font-family: var(--font-display);
+}
+
+/* Champion block */
+.match-card .champion-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.match-card .champ-icon {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+}
+.match-card .champ-name {
+  font-size: 12px;
+  color: var(--text-body);
+  max-width: 84px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* KDA — gold numerals (AGENTS.md §12: gold reserved for numerals) */
+.match-card .kda {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-display);
+}
+.match-card .kda .kda-line {
+  font-size: var(--step-2);
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: -0.01em;
+}
+.match-card .kda .kda-ratio {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Items row */
+.match-card .items {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+.match-card .item-slot {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  background: var(--surface-0);
+  display: inline-block;
+}
+.match-card .item-slot.empty {
+  border-style: dashed;
+  border-color: var(--hairline);
+}
+
+/* Stats column — gold numerals */
+.match-card .stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.match-card .stats .numeric {
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+/* Footer meta */
+.match-card .footer-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.match-card .footer-meta .mode { color: var(--text-body); }
+
+/* Responsive: collapse columns below 900px */
+@media (max-width: 900px) {
+  .match-card {
+    grid-template-columns: 78px 78px 1fr;
+    grid-template-rows: auto auto;
+    height: auto;
+    row-gap: var(--space-2);
+    padding: var(--space-2) var(--space-3) var(--space-2) calc(var(--space-3) - 4px);
+  }
+  .match-card .kda { grid-column: 3 / 4; grid-row: 1 / 2; }
+  .match-card .footer-meta { grid-column: 3 / 4; grid-row: 2 / 3; align-items: flex-start; }
+  .match-card .items,
+  .match-card .stats { display: none; }
+}

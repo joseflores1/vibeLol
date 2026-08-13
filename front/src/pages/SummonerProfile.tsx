@@ -9,8 +9,8 @@ import { ProfileIcon } from "../components/ProfileIcon";
 import { RankedBadge } from "../components/RankedBadge";
 import { MasteryGrid } from "../components/MasteryGrid";
 import { RegionPill } from "../components/RegionPill";
-import { Tabs, type MatchTab } from "../components/Tabs";
-import { MatchHistoryPreview } from "../components/MatchHistoryPreview";
+import { MatchHistory } from "../components/MatchHistory";
+import { type MatchTab } from "../components/Tabs";
 import {
   useSummonerProfile,
   useLeagueByRiotId,
@@ -146,8 +146,16 @@ export function SummonerProfilePage() {
               <div className="main">
                 <section>
                   <h2 className="section-title">Recent Matches</h2>
-                  <Tabs active={activeTab} onChange={setActiveTab} />
-                  <MatchHistoryPreview />
+                  <MatchHistory
+                    gameName={gameName}
+                    tagLine={tagLine}
+                    region={region}
+                    puuid={profile.data?.account.puuid}
+                    version={version}
+                    championMap={championMap}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                  />
                 </section>
               </div>
             </div>

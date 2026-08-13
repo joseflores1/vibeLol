@@ -1,0 +1,115 @@
+import type { MatchDetail, MatchParticipant, Champion } from "../types/api";
+import { championIconUrl, itemIconUrl } from "../lib/ddragon";
+import "./MatchCard.css";
+
+interface MatchCardProps {
+  match: MatchDetail;
+  // The searched player's puuid — used to find "your row" in participants
+  // and to drive the win/loss team-color stripe.
+  puuid: string;
+  version: string;
+  championMap: Map<number, Champion>;
+}
+
+function fmtDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function fmtKda(k: number, d: number, a: number): { line: string; ratio: string } {
+  const line = `${k}/${d}/${a}`;
+  const ratio = d === 0 ? "Perfect" : ((k + a) / d).toFixed(2);
+  return { line, ratio };
+}
+
+// Single match row — 96px height, 4px left-edge team-color stripe (blue for
+// win, red for loss — AGENTS.md §12). Layout columns: outcome | champion +
+// spell row | KDA (gold mono) | items | stat meta (gold earned + CS +
+// vision) | game mode + duration + timestamp.
+export function MatchCard({ match, puuid, version, championMap }: MatchCardProps) {
+  const you = match.participants.find((p) => p.puuid === puuid) as
+    | MatchParticipant
+    | undefined;
+
+  if (!you) {
+    // Defensive — backend should never lose a participant we just asked
+    // about, but if a row is missing we render an honest stripe-less row.
+    return (
+      <div className="match-card missing">
+        <span className="outcome">
+          Match {match.matchId} — your stats unavailable.
+        </span>
+      </div>
+    );
+  }
+
+  const win = you.win;
+  const stripeClass = win ? "win" : "loss";
+  const teamColor = win ? "var(--blue-team)" : "var(--red-team)";
+  const { line: kdaLine, ratio: kdaRatio } = fmtKda(you.kills, you.deaths, you.assists);
+  const champion = championMap.get(you.championId);
+  const champIconId = champion?.id ?? you.championName;
+  const cs = you.totalMinionsKilled ?? 0;
+  const goldK = (you.goldEarned / 1000).toFixed(1);
+  const items = [you.item0, you.item1, you.item2, you.item3, you.item4, you.item5, you.item6];
+  const startedAt = new Date(match.gameStartTimestamp);
+  const modeLabel = match.gameMode ?? "Match";
+
+  return (
+    <div className={`match-card ${stripeClass}`} style={{ "--team-color": teamColor } as React.CSSProperties}>
+      <div className="outcome">
+        <strong className="verdict">{win ? "Victory" : "Defeat"}</strong>
+        <span className="duration">{fmtDuration(match.gameDuration)}</span>
+      </div>
+
+      <div className="champion-block">
+        <img
+          className="champ-icon"
+          src={championIconUrl(version, champIconId)}
+          alt={champion?.name ?? you.championName}
+          width={40}
+          height={40}
+          loading="lazy"
+        />
+        <span className="champ-name">{champion?.name ?? you.championName}</span>
+      </div>
+
+      <div className="kda">
+        <span className="kda-line">{kdaLine}</span>
+        <span className="kda-ratio">{kdaRatio} KDA</span>
+      </div>
+
+      <div className="items">
+        {items.map((itemId, i) =>
+          itemId == null ? (
+            <span key={i} className="item-slot empty" />
+          ) : (
+            <img
+              key={i}
+              className="item-slot"
+              src={itemIconUrl(version, itemId)}
+              alt={`Item ${itemId}`}
+              width={22}
+              height={22}
+              loading="lazy"
+            />
+          ),
+        )}
+      </div>
+
+      <div className="stats">
+        <span className="stat"><span className="numeric">{goldK}k</span> gold</span>
+        <span className="stat"><span className="numeric">{cs}</span> CS</span>
+        {you.visionScore != null && (
+          <span className="stat"><span className="numeric">{you.visionScore}</span> vision</span>
+        )}
+      </div>
+
+      <div className="footer-meta">
+        <span className="mode">{modeLabel}</span>
+        <span className="time">{startedAt.toLocaleDateString()}</span>
+      </div>
+    </div>
+  );
+}
