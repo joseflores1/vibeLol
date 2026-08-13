@@ -2,7 +2,7 @@
  *
  * Distinctive direction: warm off-black instead of neutral zinc; gold used
  * with restraint (KDA + mastery numbers only, never decoration); match
- * detail will be a diptych of team-color zones (reserved for PR #9).
+ * detail will be a diptych of team-color zones (reserved for Phase 3b).
  * Type: Sora for body, JetBrains Mono for big numbers (the data-terminal
  * feel that differentiates this site from generic neon dashboard stats).
  *
@@ -22,8 +22,8 @@
   --gold:      #c8aa6e;   /* KDA + mastery numbers only */
   --gold-dim:  #8a784f;
 
-  /* Team colors — reserved for PR #9 match detail diptych, surfaced here
-   * so the Profile page can use them on win/loss contrast if needed. */
+  /* Team colors — reserved for Phase 3b match detail diptych, surfaced
+   * here so the Profile page can use them on win/loss contrast if needed. */
   --blue-team: #2095dd;
   --red-team:  #e84057;
   --win:       var(--blue-team);
@@ -82,6 +82,8 @@
   /* Layout */
   --content-max: 1024px;
   --content-pad: var(--space-4);
+  --nav-height: 54px;       /* persistent top nav shell (AGENTS.md §12) */
+  --footer-bg: #100c08;     /* high-contrast footer (AGENTS.md §12) */
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -10,7 +10,7 @@ import { SummonerProfilePage } from "./pages/SummonerProfile";
 //   /summoners/:g/:t        → SummonerProfilePage
 //   *                       → redirect home
 //
-// PR #9 will add /summoners/:g/:t/matches and /summoners/:g/:t/matches/:id.
+// Phase 3b will add /summoners/:g/:t/matches and /summoners/:g/:t/matches/:id.
 export function AppRoutes() {
   return (
     <Routes>

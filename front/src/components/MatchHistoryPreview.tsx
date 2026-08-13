@@ -2,9 +2,9 @@ import "./MatchHistoryPreview.css";
 
 // Match history preview — the "reservation card" for the match-history
 // column. Shows the blue/red team-color diptych visual sketch (the
-// signature element per AGENTS.md §12), with a clear "coming in PR #9"
-// caption. The diptych layout is honest about upcoming work — not a
-// broken empty state, not a vague "coming soon."
+// signature element per AGENTS.md §12), with a clear "Phase 3b" caption.
+// The diptych layout is honest about upcoming work — not a broken empty
+// state, not a vague "coming soon."
 export function MatchHistoryPreview() {
   return (
     <div className="match-preview">
@@ -25,7 +25,7 @@ export function MatchHistoryPreview() {
         </div>
       </div>
       <p className="availability-note">
-        Live match data wire-up arrives in PR #9.
+        Live match data wire-up arrives in Phase 3b.
       </p>
     </div>
   );
