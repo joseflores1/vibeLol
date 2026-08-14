@@ -13,7 +13,11 @@ model Match {
   gameVersion        String?            @map("game_version")
   mapId               Int?               @map("map_id")
   queueId             Int?               @map("queue_id")
+  isCustom            Boolean            @default(false) @map("is_custom")
   participants        MatchParticipant[]
 
+  @@index([queueId])
+  @@index([gameCreation])
+  @@index([gameVersion])
   @@map("matches")
 }

@@ -46,6 +46,23 @@ const spellResponseSchema = z.object({
   data: z.record(z.string(), spellDataSchema),
 });
 
+const runeDataSchema = z.object({
+  id: z.number(),
+  key: z.string(),
+  name: z.string(),
+  shortDesc: z.string().optional().default(''),
+  longDesc: z.string().optional().default(''),
+  icon: z.string(),
+});
+const runeTreeSchema = z.object({
+  id: z.number(),
+  key: z.string(),
+  name: z.string(),
+  icon: z.string(),
+  slots: z.array(z.object({ runes: z.array(runeDataSchema) })),
+});
+const runeResponseSchema = z.array(runeTreeSchema);
+
 // ── Public types ──
 
 // Inferred types from the zod schemas (used internally for Object.entries
@@ -54,6 +71,7 @@ const spellResponseSchema = z.object({
 type ChampionDataParsed = z.infer<typeof championDataSchema>;
 type ItemDataParsed = z.infer<typeof itemDataSchema>;
 type SpellDataParsed = z.infer<typeof spellDataSchema>;
+type RuneTreeParsed = z.infer<typeof runeTreeSchema>;
 
 export interface Champion {
   key: number;
@@ -74,9 +92,21 @@ export interface Spell {
   name: string;
   id: string;
 }
+export interface Rune {
+  id: number;
+  key: string;
+  name: string;
+  shortDesc: string;
+  longDesc: string;
+  icon: string;
+  styleId: number;
+  styleKey: string;
+  styleName: string;
+}
 export type ChampionMap = Map<number, Champion>;
 export type ItemMap = Map<number, Item>;
 export type SpellMap = Map<number, Spell>;
+export type RuneMap = Map<number, Rune>;
 
 // ── Singleton client ──
 
@@ -85,6 +115,7 @@ class DdragonClient {
   private champions: ChampionMap = new Map();
   private items: ItemMap = new Map();
   private spells: SpellMap = new Map();
+  private runes: RuneMap = new Map();
   private lastVersionCheck = 0;
   private readonly versionCheckIntervalMs = 60 * 60 * 1000; // 1 hour
   private initialized = false;
@@ -124,6 +155,10 @@ class DdragonClient {
     return this.spells;
   }
 
+  getRunes(): RuneMap {
+    return this.runes;
+  }
+
   // ── Icon URL constructors (pure, given the cached version) ──
 
   championIconUrl(name: string): string {
@@ -134,6 +169,9 @@ class DdragonClient {
   }
   spellIconUrl(spellKey: string): string {
     return `${DDRAGON_BASE}/cdn/${this.version}/img/spell/${spellKey}.png`;
+  }
+  runeIconUrl(icon: string): string {
+    return `${DDRAGON_BASE}/cdn/img/${icon}`;
   }
   profileIconUrl(iconId: number): string {
     return `${DDRAGON_BASE}/cdn/${this.version}/img/profileicon/${iconId}.png`;
@@ -157,16 +195,18 @@ class DdragonClient {
     this.version = latestVersion;
     const base = `${DDRAGON_BASE}/cdn/${this.version}/data/en_US`;
 
-    // 2. Fetch champions, items, spells in parallel.
-    const [champRes, itemRes, spellRes] = await Promise.all([
+    // 2. Fetch champions, items, spells, and runes in parallel.
+    const [champRes, itemRes, spellRes, runeRes] = await Promise.all([
       fetch(`${base}/champion.json`),
       fetch(`${base}/item.json`),
       fetch(`${base}/summoner.json`),
+      fetch(`${base}/runesReforged.json`),
     ]);
 
     const champJson = championResponseSchema.parse(await champRes.json());
     const itemJson = itemResponseSchema.parse(await itemRes.json());
     const spellJson = spellResponseSchema.parse(await spellRes.json());
+    const runeJson = runeResponseSchema.parse(await runeRes.json());
 
     // 3. Build keyed maps.
 
@@ -203,6 +243,20 @@ class DdragonClient {
           id: spell.id,
         } satisfies Spell,
       ]),
+    );
+
+    this.runes = new Map(
+      (runeJson as RuneTreeParsed[]).flatMap((tree) =>
+        tree.slots.flatMap((slot) => slot.runes.map((rune) => [
+          rune.id,
+          {
+            ...rune,
+            styleId: tree.id,
+            styleKey: tree.key,
+            styleName: tree.name,
+          } satisfies Rune,
+        ] as const)),
+      ),
     );
 
     this.lastVersionCheck = Date.now();

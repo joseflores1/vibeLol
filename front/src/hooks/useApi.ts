@@ -11,6 +11,8 @@ import type {
   StaticChampionsResponse,
   MatchIdsResponse,
   MatchDetail,
+  StaticRunesResponse,
+  StaticQueuesResponse,
 } from "../types/api";
 
 // -- Types ---
@@ -100,6 +102,22 @@ export function useStaticChampions() {
   return useQuery({
     queryKey: ["static", "champions"],
     queryFn: () => apiGet<StaticChampionsResponse>("/static/champions"),
+    staleTime: Infinity,
+  });
+}
+
+export function useStaticRunes() {
+  return useQuery({
+    queryKey: ["static", "runes"],
+    queryFn: () => apiGet<StaticRunesResponse>("/static/runes"),
+    staleTime: Infinity,
+  });
+}
+
+export function useStaticQueues() {
+  return useQuery({
+    queryKey: ["static", "queues"],
+    queryFn: () => apiGet<StaticQueuesResponse>("/static/queues"),
     staleTime: Infinity,
   });
 }

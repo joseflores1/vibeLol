@@ -1,6 +1,3 @@
-// MatchParticipant — per-player per-match stats. Essential stats only
-// (~20 fields); perks/runes JSON deferred to Phase 2d (needs Data Dragon).
-//
 // puuid is a DECOUPLED indexed String (not a FK to Account). This lets matches
 // store enemies we haven't searched yet. Accounts backfill lazily when
 // someone searches that player. Standard design for LoL stats sites.
@@ -14,10 +11,16 @@ model MatchParticipant {
   puuid               String   @map("puuid")
   championId          Int      @map("champion_id")
   championName        String   @map("champion_name")
+  riotIdGameName      String?  @map("riot_id_game_name")
+  riotIdTagline       String?  @map("riot_id_tagline")
+  profileIcon         Int?     @map("profile_icon")
+  individualPosition  String?  @map("individual_position")
+  teamPosition        String?  @map("team_position")
   kills               Int
   deaths              Int
   assists             Int
   goldEarned          Int      @map("gold_earned")
+  goldSpent           Int?     @map("gold_spent")
   item0               Int?
   item1               Int?
   item2               Int?
@@ -33,6 +36,26 @@ model MatchParticipant {
   wardsPlaced         Int?     @map("wards_placed")
   wardsKilled         Int?     @map("wards_killed")
   totalMinionsKilled  Int?     @map("total_minions_killed")
+  neutralMinionsKilled Int?    @map("neutral_minions_killed")
+  champLevel          Int?     @map("champ_level")
+  totalDamageDealtToChampions Int? @map("total_damage_dealt_to_champions")
+  totalDamageTaken    Int?     @map("total_damage_taken")
+  damageDealtToObjectives Int? @map("damage_dealt_to_objectives")
+  damageSelfMitigated Int?     @map("damage_self_mitigated")
+  totalHeal           Int?     @map("total_heal")
+  totalTimeCCingOthers Int?    @map("total_time_ccing_others")
+  doubleKills         Int?     @map("double_kills")
+  tripleKills         Int?     @map("triple_kills")
+  quadraKills         Int?     @map("quadra_kills")
+  pentaKills          Int?     @map("penta_kills")
+  largestKillingSpree Int?     @map("largest_killing_spree")
+  largestMultiKill    Int?     @map("largest_multi_kill")
+  towerKills          Int?     @map("tower_kills")
+  inhibitorKills      Int?     @map("inhibitor_kills")
+  baronKills          Int?     @map("baron_kills")
+  dragonKills         Int?     @map("dragon_kills")
+  firstBloodKill      Boolean? @map("first_blood_kill")
+  perks               Json?
 
   // One row per player per match — idempotent upsert on refetch.
   @@unique([matchId, puuid])

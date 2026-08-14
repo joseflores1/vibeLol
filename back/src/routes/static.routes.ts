@@ -10,5 +10,7 @@ router.get('/version', staticController.getVersion);
 router.get('/champions', staticController.getChampions);
 router.get('/items', staticController.getItems);
 router.get('/spells', staticController.getSpells);
+router.get('/runes', staticController.getRunes);
+router.get('/queues', staticController.getQueues);
 
 export { router as staticRoutes };
