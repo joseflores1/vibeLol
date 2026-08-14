@@ -12,16 +12,44 @@ export interface MatchListOptions {
   type?: 'ranked' | 'normal' | 'tourney' | 'tournament';
 }
 
-// --- Match detail zod schema (essential fields only) ---
+const perkSelectionSchema = z.object({
+  perk: z.number(),
+  var1: z.number(),
+  var2: z.number(),
+  var3: z.number(),
+});
+
+const perkStyleSchema = z.object({
+  description: z.string(),
+  style: z.number(),
+  selections: z.array(perkSelectionSchema),
+});
+
+const perksSchema = z.object({
+  styles: z.array(perkStyleSchema),
+  statPerks: z.object({
+    defense: z.number(),
+    flex: z.number(),
+    offense: z.number(),
+  }),
+});
+
+// --- Match detail zod schema ---
 
 const participantSchema = z.object({
   puuid: z.string(),
   championId: z.number(),
   championName: z.string(),
+  riotIdGameName: z.string().nullable().optional(),
+  riotIdTagline: z.string().nullable().optional(),
+  profileIcon: z.number().nullable().optional(),
+  individualPosition: z.string().nullable().optional(),
+  teamPosition: z.string().nullable().optional(),
   kills: z.number(),
   deaths: z.number(),
   assists: z.number(),
   goldEarned: z.number(),
+  goldSpent: z.number().nullable().optional(),
   item0: z.number().nullable().optional(),
   item1: z.number().nullable().optional(),
   item2: z.number().nullable().optional(),
@@ -37,6 +65,26 @@ const participantSchema = z.object({
   wardsPlaced: z.number().nullable().optional(),
   wardsKilled: z.number().nullable().optional(),
   totalMinionsKilled: z.number().nullable().optional(),
+  neutralMinionsKilled: z.number().nullable().optional(),
+  champLevel: z.number().nullable().optional(),
+  totalDamageDealtToChampions: z.number().nullable().optional(),
+  totalDamageTaken: z.number().nullable().optional(),
+  damageDealtToObjectives: z.number().nullable().optional(),
+  damageSelfMitigated: z.number().nullable().optional(),
+  totalHeal: z.number().nullable().optional(),
+  totalTimeCCingOthers: z.number().nullable().optional(),
+  doubleKills: z.number().nullable().optional(),
+  tripleKills: z.number().nullable().optional(),
+  quadraKills: z.number().nullable().optional(),
+  pentaKills: z.number().nullable().optional(),
+  largestKillingSpree: z.number().nullable().optional(),
+  largestMultiKill: z.number().nullable().optional(),
+  towerKills: z.number().nullable().optional(),
+  inhibitorKills: z.number().nullable().optional(),
+  baronKills: z.number().nullable().optional(),
+  dragonKills: z.number().nullable().optional(),
+  firstBloodKill: z.boolean().nullable().optional(),
+  perks: perksSchema.nullable().optional(),
 });
 
 const matchInfoSchema = z.object({
@@ -65,6 +113,7 @@ export const matchSchema = z.object({
 
 export type RiotMatch = z.infer<typeof matchSchema>;
 export type RiotParticipant = z.infer<typeof participantSchema>;
+export type RiotPerks = z.infer<typeof perksSchema>;
 
 // --- API functions ---
 

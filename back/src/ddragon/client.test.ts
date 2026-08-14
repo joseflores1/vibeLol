@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Unit tests for the Data Dragon client. Mocks global fetch — no network
-// calls. Covers version parsing, champion/item/spell mappings, icon URL
+  // calls. Covers version parsing, champion/item/spell/rune mappings, icon URL
 // construction, and the refresh-if-needed logic.
 //
 // We instantiate a fresh DdragonClient per test (via a private import) to
@@ -55,6 +55,25 @@ describe('ddragon/client', () => {
             SummonerIgnite: { key: '14', name: 'Ignite', id: 'SummonerIgnite' },
           },
         }), { status: 200 }),
+      )
+      // runesReforged.json
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([
+          {
+            id: 8100,
+            key: 'Domination',
+            name: 'Domination',
+            icon: 'perk-images/Styles/7200_Domination.png',
+            slots: [{ runes: [{
+              id: 8112,
+              key: 'Electrocute',
+              name: 'Electrocute',
+              icon: 'perk-images/Styles/Domination/Electrocute/Electrocute.png',
+              shortDesc: 'desc',
+              longDesc: 'long desc',
+            }] }],
+          },
+        ]), { status: 200 }),
       );
   }
 
@@ -99,6 +118,24 @@ describe('ddragon/client', () => {
       const spells = ddragonClient.getSpells();
       expect(spells.get(4)).toEqual({ key: 4, name: 'Flash', id: 'SummonerFlash' });
       expect(spells.get(14)).toEqual({ key: 14, name: 'Ignite', id: 'SummonerIgnite' });
+    });
+
+    it('builds a rune map keyed by numeric ID', async () => {
+      mockFullInit();
+      const { ddragonClient } = await import('./client.js');
+      await ddragonClient.init();
+
+      expect(ddragonClient.getRunes().get(8112)).toEqual({
+        id: 8112,
+        key: 'Electrocute',
+        name: 'Electrocute',
+        shortDesc: 'desc',
+        longDesc: 'long desc',
+        icon: 'perk-images/Styles/Domination/Electrocute/Electrocute.png',
+        styleId: 8100,
+        styleKey: 'Domination',
+        styleName: 'Domination',
+      });
     });
 
     it('marks the client as initialized after init()', async () => {
@@ -146,6 +183,15 @@ describe('ddragon/client', () => {
       expect(ddragonClient.profileIconUrl(654))
         .toBe('https://ddragon.leagueoflegends.com/cdn/16.15.1/img/profileicon/654.png');
     });
+
+    it('constructs rune icon URLs from the Data Dragon icon path', async () => {
+      mockFullInit('16.15.1');
+      const { ddragonClient } = await import('./client.js');
+      await ddragonClient.init();
+
+      expect(ddragonClient.runeIconUrl('perk-images/Styles/7200_Domination.png'))
+        .toBe('https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/7200_Domination.png');
+    });
   });
 
   describe('refreshIfNeeded()', () => {
@@ -183,8 +229,8 @@ describe('ddragon/client', () => {
       await ddragonClient.refreshIfNeeded();
 
       expect(ddragonClient.getVersion()).toBe('16.16.1');
-      // 4 fetches: versions + champion + item + spell.
-      expect(fetchMock).toHaveBeenCalledTimes(4);
+      // 5 fetches: versions + champion + item + spell + runes.
+      expect(fetchMock).toHaveBeenCalledTimes(5);
       vi.useRealTimers();
     });
   });
@@ -200,7 +246,8 @@ describe('ddragon/client', () => {
         },
       }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ data: {} }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ data: {} }), { status: 200 }));
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: {} }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
   }
 
   // Need to override the versionCheckInterval so refreshIfNeeded runs

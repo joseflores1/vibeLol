@@ -240,7 +240,9 @@ on Data Dragon, **not** the Riot API:
 
 - Versions list: `https://ddragon.leagueoflegends.com/api/versions.json` (newest = stable).
 - Champion data: `https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/champion.json`.
+- Rune data: `https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/runesReforged.json`.
 - Icons: `https://ddragon.leagueoflegends.com/cdn/{version}/img/{champion|item|profileicon}/{key}.png`.
+- Rune icons: `https://ddragon.leagueoflegends.com/cdn/img/{icon-path}` (the path comes from rune data).
 
 Cache the latest version string centrally (it bumps every 2 weeks); don't
 fetch it per request. Map champion keys (`Q-89`, etc.) to IDs via the
@@ -479,6 +481,7 @@ Master `#8467c7`, Grandmaster `#c93b3b`, Challenger `#5d8af6`.
 |             | (`id` = alphabetic ID, e.g., `MonkeyKing` for Wukong, from /static/champions) |
 | Item        | `https://ddragon.leagueoflegends.com/cdn/{version}/img/item/{id}.png`          |
 | Spell       | `https://ddragon.leagueoflegends.com/cdn/{version}/img/spell/{key}.png`        |
+| Rune        | `https://ddragon.leagueoflegends.com/cdn/img/{icon-path}`                       |
 | Rank crest  | `https://raw.githubusercontent.com/communitydragon/communitydragon-assets/master/assets/images/rankedcrests/24.6.1/24.6.1_{tier-lowercase}.png` |
 
 ### Region display map

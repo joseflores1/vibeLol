@@ -1,5 +1,11 @@
 import { prisma } from '../lib/client.js';
-import { getMatchIdsByPuuid, getMatch, type MatchListOptions } from '../riot/match.api.js';
+import { Prisma } from '../generated/prisma/client.js';
+import {
+  getMatchIdsByPuuid,
+  getMatch,
+  type MatchListOptions,
+  type RiotParticipant,
+} from '../riot/match.api.js';
 import type { RiotRegion, RiotCluster } from '../riot/client.js';
 import { clusterFromRegion, resolveAndCacheAccount } from './summoner.service.js';
 import { isStale, TTL } from '../lib/staleness.js';
@@ -7,6 +13,150 @@ import { isStale, TTL } from '../lib/staleness.js';
 interface MatchListCacheEntry {
   fetchedAt: Date;
   result: { puuid: string; matchIds: string[] };
+}
+
+export interface MatchTeamAggregate {
+  teamId: number;
+  win: boolean;
+  totalGoldEarned: number;
+  totalKills: number;
+  totalDeaths: number;
+  totalAssists: number;
+  totalVisionScore: number;
+  totalWardsPlaced: number;
+  totalWardsKilled: number;
+  totalMinionsKilled: number;
+  totalDamageDealtToChampions: number;
+  totalDamageTaken: number;
+  damageDealtToObjectives: number;
+  towerKills: number;
+  inhibitorKills: number;
+  baronKills: number;
+  dragonKills: number;
+}
+
+type ParticipantForAggregate = {
+  teamId: number;
+  win: boolean;
+  kills: number;
+  deaths: number;
+  assists: number;
+  goldEarned: number;
+  visionScore: number | null;
+  wardsPlaced: number | null;
+  wardsKilled: number | null;
+  totalMinionsKilled: number | null;
+  totalDamageDealtToChampions: number | null;
+  totalDamageTaken: number | null;
+  damageDealtToObjectives: number | null;
+  towerKills: number | null;
+  inhibitorKills: number | null;
+  baronKills: number | null;
+  dragonKills: number | null;
+};
+
+function add(value: number | null): number {
+  return value ?? 0;
+}
+
+function aggregateTeams(participants: ParticipantForAggregate[]): MatchTeamAggregate[] {
+  const teams = new Map<number, MatchTeamAggregate>();
+  for (const participant of participants) {
+    const current = teams.get(participant.teamId) ?? {
+      teamId: participant.teamId,
+      win: participant.win,
+      totalGoldEarned: 0,
+      totalKills: 0,
+      totalDeaths: 0,
+      totalAssists: 0,
+      totalVisionScore: 0,
+      totalWardsPlaced: 0,
+      totalWardsKilled: 0,
+      totalMinionsKilled: 0,
+      totalDamageDealtToChampions: 0,
+      totalDamageTaken: 0,
+      damageDealtToObjectives: 0,
+      towerKills: 0,
+      inhibitorKills: 0,
+      baronKills: 0,
+      dragonKills: 0,
+    };
+
+    current.totalGoldEarned += participant.goldEarned;
+    current.totalKills += participant.kills;
+    current.totalDeaths += participant.deaths;
+    current.totalAssists += participant.assists;
+    current.totalVisionScore += add(participant.visionScore);
+    current.totalWardsPlaced += add(participant.wardsPlaced);
+    current.totalWardsKilled += add(participant.wardsKilled);
+    current.totalMinionsKilled += add(participant.totalMinionsKilled);
+    current.totalDamageDealtToChampions += add(participant.totalDamageDealtToChampions);
+    current.totalDamageTaken += add(participant.totalDamageTaken);
+    current.damageDealtToObjectives += add(participant.damageDealtToObjectives);
+    current.towerKills += add(participant.towerKills);
+    current.inhibitorKills += add(participant.inhibitorKills);
+    current.baronKills += add(participant.baronKills);
+    current.dragonKills += add(participant.dragonKills);
+    teams.set(participant.teamId, current);
+  }
+  return Array.from(teams.values()).sort((a, b) => a.teamId - b.teamId);
+}
+
+function withTeamAggregates<T extends { participants: ParticipantForAggregate[] }>(match: T) {
+  return { ...match, teams: aggregateTeams(match.participants) };
+}
+
+function participantData(p: RiotParticipant) {
+  return {
+    puuid: p.puuid,
+    championId: p.championId,
+    championName: p.championName,
+    riotIdGameName: p.riotIdGameName ?? null,
+    riotIdTagline: p.riotIdTagline ?? null,
+    profileIcon: p.profileIcon ?? null,
+    individualPosition: p.individualPosition ?? null,
+    teamPosition: p.teamPosition ?? null,
+    kills: p.kills,
+    deaths: p.deaths,
+    assists: p.assists,
+    goldEarned: p.goldEarned,
+    goldSpent: p.goldSpent ?? null,
+    item0: p.item0 ?? null,
+    item1: p.item1 ?? null,
+    item2: p.item2 ?? null,
+    item3: p.item3 ?? null,
+    item4: p.item4 ?? null,
+    item5: p.item5 ?? null,
+    item6: p.item6 ?? null,
+    summoner1Id: p.summoner1Id,
+    summoner2Id: p.summoner2Id,
+    teamId: p.teamId,
+    win: p.win,
+    visionScore: p.visionScore ?? null,
+    wardsPlaced: p.wardsPlaced ?? null,
+    wardsKilled: p.wardsKilled ?? null,
+    totalMinionsKilled: p.totalMinionsKilled ?? null,
+    neutralMinionsKilled: p.neutralMinionsKilled ?? null,
+    champLevel: p.champLevel ?? null,
+    totalDamageDealtToChampions: p.totalDamageDealtToChampions ?? null,
+    totalDamageTaken: p.totalDamageTaken ?? null,
+    damageDealtToObjectives: p.damageDealtToObjectives ?? null,
+    damageSelfMitigated: p.damageSelfMitigated ?? null,
+    totalHeal: p.totalHeal ?? null,
+    totalTimeCCingOthers: p.totalTimeCCingOthers ?? null,
+    doubleKills: p.doubleKills ?? null,
+    tripleKills: p.tripleKills ?? null,
+    quadraKills: p.quadraKills ?? null,
+    pentaKills: p.pentaKills ?? null,
+    largestKillingSpree: p.largestKillingSpree ?? null,
+    largestMultiKill: p.largestMultiKill ?? null,
+    towerKills: p.towerKills ?? null,
+    inhibitorKills: p.inhibitorKills ?? null,
+    baronKills: p.baronKills ?? null,
+    dragonKills: p.dragonKills ?? null,
+    firstBloodKill: p.firstBloodKill ?? null,
+    perks: p.perks ?? Prisma.DbNull,
+  };
 }
 
 const matchListCache = new Map<string, MatchListCacheEntry>();
@@ -59,18 +209,18 @@ export const matchService = {
   // The region query param is only used for routing (the cluster to call
   // Riot on); the matchId itself encodes the region prefix.
   async findMatchById(region: RiotRegion, matchId: string) {
-    // 1. Check DB cache first.
     const cached = await prisma.match.findUnique({
       where: { matchId },
       include: { participants: true },
     });
-    if (cached) return cached;
+    const needsEnrichment = !cached
+      || cached.participants.length === 0
+      || cached.participants.some((participant) => participant.perks == null);
+    if (cached && !needsEnrichment) return withTeamAggregates(cached);
 
-    // 2. Cache miss — fetch from Riot (cluster-routed).
     const cluster: RiotCluster = clusterFromRegion(region);
     const riotMatch = await getMatch(cluster, matchId);
 
-    // 3. Persist match + participants in a transaction.
     const match = await prisma.match.upsert({
       where: { matchId: riotMatch.metadata.matchId },
       create: {
@@ -87,73 +237,40 @@ export const matchService = {
         gameVersion: riotMatch.info.gameVersion,
         mapId: riotMatch.info.mapId,
         queueId: riotMatch.info.queueId,
+        isCustom: riotMatch.info.gameType === 'CUSTOM_GAME',
       },
-      update: {},
+      update: {
+        dataVersion: riotMatch.metadata.dataVersion,
+        gameCreation: new Date(riotMatch.info.gameCreation),
+        gameDuration: riotMatch.info.gameDuration,
+        gameStartTimestamp: new Date(riotMatch.info.gameStartTimestamp),
+        gameEndTimestamp: riotMatch.info.gameEndTimestamp
+          ? new Date(riotMatch.info.gameEndTimestamp)
+          : null,
+        gameMode: riotMatch.info.gameMode,
+        gameType: riotMatch.info.gameType,
+        gameVersion: riotMatch.info.gameVersion,
+        mapId: riotMatch.info.mapId,
+        queueId: riotMatch.info.queueId,
+        isCustom: riotMatch.info.gameType === 'CUSTOM_GAME',
+      },
       include: { participants: true },
     });
 
-    // Upsert each participant (idempotent via @@unique([matchId, puuid])).
     for (const p of riotMatch.info.participants) {
       await prisma.matchParticipant.upsert({
         where: {
           matchId_puuid: { matchId: match.matchId, puuid: p.puuid },
         },
-        create: {
-          matchId: match.matchId,
-          puuid: p.puuid,
-          championId: p.championId,
-          championName: p.championName,
-          kills: p.kills,
-          deaths: p.deaths,
-          assists: p.assists,
-          goldEarned: p.goldEarned,
-          item0: p.item0,
-          item1: p.item1,
-          item2: p.item2,
-          item3: p.item3,
-          item4: p.item4,
-          item5: p.item5,
-          item6: p.item6,
-          summoner1Id: p.summoner1Id,
-          summoner2Id: p.summoner2Id,
-          teamId: p.teamId,
-          win: p.win,
-          visionScore: p.visionScore,
-          wardsPlaced: p.wardsPlaced,
-          wardsKilled: p.wardsKilled,
-          totalMinionsKilled: p.totalMinionsKilled,
-        },
-        update: {
-          championId: p.championId,
-          championName: p.championName,
-          kills: p.kills,
-          deaths: p.deaths,
-          assists: p.assists,
-          goldEarned: p.goldEarned,
-          item0: p.item0,
-          item1: p.item1,
-          item2: p.item2,
-          item3: p.item3,
-          item4: p.item4,
-          item5: p.item5,
-          item6: p.item6,
-          summoner1Id: p.summoner1Id,
-          summoner2Id: p.summoner2Id,
-          teamId: p.teamId,
-          win: p.win,
-          visionScore: p.visionScore,
-          wardsPlaced: p.wardsPlaced,
-          wardsKilled: p.wardsKilled,
-          totalMinionsKilled: p.totalMinionsKilled,
-        },
+        create: { matchId: match.matchId, ...participantData(p) },
+        update: participantData(p),
       });
     }
 
-    // Re-fetch with participants included (the upsert above returns the
-    // match row but participants were added in a separate loop).
-    return prisma.match.findUnique({
+    const enriched = await prisma.match.findUnique({
       where: { matchId },
       include: { participants: true },
     });
+    return enriched ? withTeamAggregates(enriched) : null;
   },
 };

@@ -170,6 +170,42 @@ describe('riot/match.api', () => {
       expect(data.info.participants[5]!.win).toBe(false);
     });
 
+    it('parses rich participant metrics and perks', async () => {
+      const richMatch = {
+        ...sampleMatch,
+        info: {
+          ...sampleMatch.info,
+          participants: [{
+            ...sampleMatch.info.participants[0],
+            riotIdGameName: 'Faker',
+            riotIdTagline: 'KR1',
+            individualPosition: 'MIDDLE',
+            teamPosition: 'MIDDLE',
+            totalDamageDealtToChampions: 25_000,
+            goldSpent: 10_000,
+            pentaKills: 1,
+            perks: {
+              styles: [{
+                description: 'primaryStyle',
+                style: 8100,
+                selections: [{ perk: 8112, var1: 0, var2: 0, var3: 0 }],
+              }],
+              statPerks: { offense: 5005, flex: 5008, defense: 5001 },
+            },
+          }],
+        },
+      };
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify(richMatch), { status: 200 }),
+      );
+
+      const data = await getMatch('americas', 'NA1_1234567890');
+
+      expect(data.info.participants[0]!.riotIdGameName).toBe('Faker');
+      expect(data.info.participants[0]!.totalDamageDealtToChampions).toBe(25_000);
+      expect(data.info.participants[0]!.perks?.styles[0]?.selections[0]?.perk).toBe(8112);
+    });
+
     it('accepts null values for optional fields', async () => {
       const matchWithNull = {
         metadata: { matchId: 'NA1_1', participants: ['p1'] },

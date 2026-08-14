@@ -22,3 +22,7 @@ export function itemIconUrl(version: string, itemId: number): string {
 export function spellIconUrl(version: string, spellKey: string): string {
   return `${DDRAGON_BASE}/cdn/${version}/img/spell/${spellKey}.png`;
 }
+
+export function runeIconUrl(iconPath: string): string {
+  return `${DDRAGON_BASE}/cdn/img/${iconPath}`;
+}

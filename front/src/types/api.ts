@@ -74,6 +74,36 @@ export interface StaticChampionsResponse {
   champions: Champion[];
 }
 
+export interface Rune {
+  id: number;
+  key: string;
+  name: string;
+  shortDesc: string;
+  longDesc: string;
+  icon: string;
+  styleId: number;
+  styleKey: string;
+  styleName: string;
+}
+
+export interface StaticRunesResponse {
+  version: string;
+  runes: Rune[];
+}
+
+export interface QueueDefinition {
+  id: number;
+  key: string;
+  name: string;
+  gameMode: string;
+  custom: boolean;
+  analyticsEligible: boolean;
+}
+
+export interface StaticQueuesResponse {
+  queues: QueueDefinition[];
+}
+
 // Single participant row in a match — mirrors MatchParticipant Prisma model.
 export interface MatchParticipant {
   id: string;
@@ -81,10 +111,16 @@ export interface MatchParticipant {
   puuid: string;
   championId: number;
   championName: string;
+  riotIdGameName: string | null;
+  riotIdTagline: string | null;
+  profileIcon: number | null;
+  individualPosition: string | null;
+  teamPosition: string | null;
   kills: number;
   deaths: number;
   assists: number;
   goldEarned: number;
+  goldSpent: number | null;
   item0: number | null;
   item1: number | null;
   item2: number | null;
@@ -100,6 +136,68 @@ export interface MatchParticipant {
   wardsPlaced: number | null;
   wardsKilled: number | null;
   totalMinionsKilled: number | null;
+  neutralMinionsKilled: number | null;
+  champLevel: number | null;
+  totalDamageDealtToChampions: number | null;
+  totalDamageTaken: number | null;
+  damageDealtToObjectives: number | null;
+  damageSelfMitigated: number | null;
+  totalHeal: number | null;
+  totalTimeCCingOthers: number | null;
+  doubleKills: number | null;
+  tripleKills: number | null;
+  quadraKills: number | null;
+  pentaKills: number | null;
+  largestKillingSpree: number | null;
+  largestMultiKill: number | null;
+  towerKills: number | null;
+  inhibitorKills: number | null;
+  baronKills: number | null;
+  dragonKills: number | null;
+  firstBloodKill: boolean | null;
+  perks: MatchPerks | null;
+}
+
+export interface MatchPerkSelection {
+  perk: number;
+  var1: number;
+  var2: number;
+  var3: number;
+}
+
+export interface MatchPerkStyle {
+  description: string;
+  style: number;
+  selections: MatchPerkSelection[];
+}
+
+export interface MatchPerks {
+  styles: MatchPerkStyle[];
+  statPerks: {
+    defense: number;
+    flex: number;
+    offense: number;
+  };
+}
+
+export interface MatchTeam {
+  teamId: number;
+  win: boolean;
+  totalGoldEarned: number;
+  totalKills: number;
+  totalDeaths: number;
+  totalAssists: number;
+  totalVisionScore: number;
+  totalWardsPlaced: number;
+  totalWardsKilled: number;
+  totalMinionsKilled: number;
+  totalDamageDealtToChampions: number;
+  totalDamageTaken: number;
+  damageDealtToObjectives: number;
+  towerKills: number;
+  inhibitorKills: number;
+  baronKills: number;
+  dragonKills: number;
 }
 
 // Full match detail — cached in Postgres on the backend.
@@ -115,7 +213,9 @@ export interface MatchDetail {
   gameVersion: string | null;
   mapId: number | null;
   queueId: number | null;
+  isCustom: boolean;
   participants: MatchParticipant[];
+  teams: MatchTeam[];
 }
 
 // GET /summoners/by-riot-id/:g/:t/matches returns { puuid, matchIds }.

@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { ddragonClient } from '../ddragon/client.js';
+import { QUEUES } from '../constants/queues.js';
 
 // HTTP layer for static Data Dragon metadata (champions, items, spells,
 // version). These are in-memory datasets cached by the DdragonClient
@@ -30,5 +31,15 @@ export const staticController = {
     const version = ddragonClient.getVersion();
     const spells = Array.from(ddragonClient.getSpells().values());
     res.json({ success: true, data: { version, spells } });
+  },
+
+  async getRunes(_req: Request, res: Response) {
+    const version = ddragonClient.getVersion();
+    const runes = Array.from(ddragonClient.getRunes().values());
+    res.json({ success: true, data: { version, runes } });
+  },
+
+  async getQueues(_req: Request, res: Response) {
+    res.json({ success: true, data: { queues: QUEUES } });
   },
 };
