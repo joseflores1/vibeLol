@@ -87,6 +87,19 @@ const participantSchema = z.object({
   perks: perksSchema.nullable().optional(),
 });
 
+const teamBanSchema = z.object({
+  championId: z.number(),
+  pickTurn: z.number().nullable().optional(),
+});
+
+const teamSchema = z.object({
+  teamId: z.number(),
+  // Older data versions encode "Win"/"Fail" strings; participant rows are
+  // the win source of truth, so this is parsed defensively and unused.
+  win: z.union([z.boolean(), z.string()]).nullable().optional(),
+  bans: z.array(teamBanSchema).nullable().optional(),
+});
+
 const matchInfoSchema = z.object({
   gameCreation: z.number(),
   gameDuration: z.number(),
@@ -97,6 +110,7 @@ const matchInfoSchema = z.object({
   gameVersion: z.string().nullable().optional(),
   mapId: z.number().nullable().optional(),
   queueId: z.number().nullable().optional(),
+  teams: z.array(teamSchema).nullable().optional(),
   participants: z.array(participantSchema),
 });
 
@@ -114,6 +128,7 @@ export const matchSchema = z.object({
 export type RiotMatch = z.infer<typeof matchSchema>;
 export type RiotParticipant = z.infer<typeof participantSchema>;
 export type RiotPerks = z.infer<typeof perksSchema>;
+export type RiotTeam = z.infer<typeof teamSchema>;
 
 // --- API functions ---
 
@@ -148,4 +163,55 @@ export async function getMatch(
   const path = `/lol/match/v5/matches/${encodeURIComponent(matchId)}`;
   const data = await riotGet<unknown>(cluster, path);
   return matchSchema.parse(data);
+}
+
+// --- Match v5 timeline ---
+
+// Timeline JSON is huge (the events array dominates it), so the schema
+// stays intentionally loose: events are validated only as opaque objects
+// (we persist them but never serve them), while the frames we actually
+// serve are strictly typed.
+const timelineParticipantFrameSchema = z.object({
+  participantId: z.number(),
+  level: z.number().nullable().optional(),
+  currentGold: z.number().nullable().optional(),
+  totalGold: z.number().nullable().optional(),
+  goldPerSecond: z.number().nullable().optional(),
+  jungleMinionsKilled: z.number().nullable().optional(),
+  laneMinionsKilled: z.number().nullable().optional(),
+  minionsKilled: z.number().nullable().optional(),
+  xp: z.number().nullable().optional(),
+  damageStats: z.record(z.string(), z.number()).nullable().optional(),
+}).passthrough();
+
+const timelineFrameSchema = z.object({
+  timestamp: z.number(),
+  participantFrames: z.record(z.string(), timelineParticipantFrameSchema),
+  events: z.array(z.unknown()).default([]),
+});
+
+const timelineSchema = z.object({
+  metadata: z.object({
+    dataVersion: z.string().nullable().optional(),
+    matchId: z.string(),
+    participants: z.array(z.string()),
+  }),
+  info: z.object({
+    frameInterval: z.number(),
+    frames: z.array(timelineFrameSchema),
+  }),
+});
+
+export type RiotTimeline = z.infer<typeof timelineSchema>;
+export type RiotTimelineFrame = z.infer<typeof timelineFrameSchema>;
+
+// Match v5 timeline. Per-minute frames for all 10 participants plus the
+// event stream. Endpoint: /lol/match/v5/matches/{matchId}/timeline
+export async function getTimeline(
+  cluster: RiotCluster,
+  matchId: string,
+): Promise<RiotTimeline> {
+  const path = `/lol/match/v5/matches/${encodeURIComponent(matchId)}/timeline`;
+  const data = await riotGet<unknown>(cluster, path);
+  return timelineSchema.parse(data);
 }

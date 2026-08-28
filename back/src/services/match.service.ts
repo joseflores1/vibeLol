@@ -3,8 +3,10 @@ import { Prisma } from '../generated/prisma/client.js';
 import {
   getMatchIdsByPuuid,
   getMatch,
+  getTimeline,
   type MatchListOptions,
   type RiotParticipant,
+  type RiotTimeline,
 } from '../riot/match.api.js';
 import type { RiotRegion, RiotCluster } from '../riot/client.js';
 import { clusterFromRegion } from '../constants/regions.js';
@@ -229,9 +231,13 @@ export const matchService = {
       where: { matchId },
       include: { participants: true },
     });
+    // bansFetchedAt gates one-time enrichment of matches cached before
+    // ban persistence (Phase 8b); legitimately ban-free games set it on
+    // their first Riot fetch, so there is no refetch loop.
     const needsEnrichment = !cached
       || cached.participants.length === 0
-      || cached.participants.some((participant) => participant.perks == null);
+      || cached.participants.some((participant) => participant.perks == null)
+      || cached.bansFetchedAt == null;
     if (cached && !needsEnrichment) return withTeamAggregates(cached);
 
     const cluster: RiotCluster = clusterFromRegion(region);
@@ -283,10 +289,69 @@ export const matchService = {
       });
     }
 
+    // Team bans: idempotent rewrite (delete + create) on every Riot fetch.
+    const bans = (riotMatch.info.teams ?? []).flatMap((team) =>
+      (team.bans ?? []).map((ban, banIndex) => ({
+        matchId: match.matchId,
+        teamId: team.teamId,
+        championId: ban.championId,
+        // Riot occasionally omits pickTurn; fall back to ban order (1-5).
+        pickTurn: ban.pickTurn ?? banIndex + 1,
+      })),
+    );
+    await prisma.matchBan.deleteMany({ where: { matchId: match.matchId } });
+    if (bans.length > 0) await prisma.matchBan.createMany({ data: bans });
+    await prisma.match.update({
+      where: { matchId: match.matchId },
+      data: { bansFetchedAt: new Date() },
+    });
+
     const enriched = await prisma.match.findUnique({
       where: { matchId },
       include: { participants: true },
     });
     return enriched ? withTeamAggregates(enriched) : null;
   },
+
+  // Timeline for one match. The raw Riot JSON is persisted fetch-through
+  // on the Match row (a finished match's timeline never changes, so it
+  // caches indefinitely); the served payload is slimmed to the puuid order
+  // plus per-minute participantFrames — the bulky events array stays in
+  // the DB for future kill-timeline features.
+  async findTimeline(region: RiotRegion, matchId: string) {
+    const cached = await prisma.match.findUnique({
+      where: { matchId },
+      select: { timeline: true },
+    });
+    if (cached?.timeline != null) return slimTimeline(matchId, cached.timeline);
+
+    // Ensure the match row exists before attaching a timeline — this also
+    // warms participants for the page that renders the graph. Propagates
+    // Riot 404s as ApiError.notFound when the matchId is bogus.
+    await this.findMatchById(region, matchId);
+
+    const riotTimeline = await getTimeline(clusterFromRegion(region), matchId);
+    await prisma.match.update({
+      where: { matchId },
+      data: { timeline: riotTimeline as unknown as Prisma.InputJsonValue },
+    });
+    return slimTimeline(matchId, riotTimeline);
+  },
 };
+
+// Strips events and normalizes the stored Riot timeline JSON into the
+// public response shape.
+function slimTimeline(matchId: string, raw: unknown) {
+  const t = raw as {
+    metadata?: { participants?: string[] };
+    info?: { frames?: Array<{ timestamp?: number; participantFrames?: unknown }> };
+  };
+  return {
+    matchId,
+    puuids: t.metadata?.participants ?? [],
+    frames: (t.info?.frames ?? []).map((frame) => ({
+      timestamp: frame.timestamp ?? 0,
+      participantFrames: frame.participantFrames ?? {},
+    })),
+  };
+}

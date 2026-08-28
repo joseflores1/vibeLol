@@ -7,5 +7,6 @@ import { analyticsController } from '../controllers/analytics.controller.js';
 const router = Router();
 
 router.get('/champions', analyticsController.getChampionStats);
+router.get('/champions/:championId', analyticsController.getChampionDetail);
 
 export { router as analyticsRoutes };

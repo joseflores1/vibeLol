@@ -124,6 +124,82 @@ docker compose down
 > `stop` vs `down`: both preserve your data. Use `stop` if you'll restart soon,
 > `down` for a clean shutdown. To restart after either, run `docker compose up -d`.
 
+## API Reference
+
+All endpoints live under `/api/v1` and share one response envelope:
+`{ success: true, data }` on success, `{ success: false, message, errors? }`
+on failure. User-facing routes use **Riot IDs** (`gameName/tagLine`) — never
+puuids (see AGENTS.md §5a). `region` is the platform code (`na1`, `euw1`,
+`kr`, …) and defaults to `na1`.
+
+### Health
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/health` | Server + DB connectivity ping |
+
+### Summoners — Riot-ID scoped
+
+| Endpoint | Description |
+|---|---|
+| `GET /summoners/by-riot-id/:gameName/:tagLine?region=` | Account + Summoner profile (level, icon, revision) |
+| `GET /summoners/by-riot-id/:g/:t/matches?region=&start=&count=&queue=&type=&startTime=&endTime=` | Match ID list (`count` ≤ 100). Custom-queue matches are filtered server-side |
+| `GET /summoners/by-riot-id/:g/:t/matches/:matchId?region=` | Full match: 10 participants + team aggregates. Cached on first miss |
+| `GET /summoners/by-riot-id/:g/:t/league?region=` | Ranked entries (solo/flex; empty if unranked) |
+| `GET /summoners/by-riot-id/:g/:t/mastery?region=` | Full champion mastery list |
+| `GET /summoners/by-riot-id/:g/:t/mastery/:championId?region=` | Single-champion mastery |
+
+### Matches — match-scoped
+
+| Endpoint | Description |
+|---|---|
+| `GET /matches/:matchId/timeline?region=` | Per-minute frames + puuid order. Raw timeline cached forever; bulky events stripped from the response |
+
+### Analytics
+
+| Endpoint | Description |
+|---|---|
+| `GET /analytics/champions?queue=&patch=&start=&count=` | Per-champion `games/wins/bans/winRate/pickRate/banRate/avg*`, sorted by games desc |
+| `GET /analytics/champions/:championId?queue=&patch=` | Drilldown: extended averages, position breakdown, item/keystone/spell popularity, matchup counters |
+
+Scope rules enforced server-side: only analytics-eligible queues (400 on
+ARAM/Bots/URF/Arena/tutorials), custom games never counted, `patch` is an
+exact Match v5 `gameVersion` bucket. Aggregation runs on-the-fly over the
+cached `match_participants` table with a 10-minute response cache; popularity
+and matchups sample the champion's most recent ≤1000 cached rows.
+
+### Search
+
+| Endpoint | Description |
+|---|---|
+| `GET /search/suggest?q=` | Autocomplete over the cached Account table (prefix, case-insensitive, top 10). No Riot call — only covers previously searched players |
+
+### Static (Data Dragon metadata, cached in memory)
+
+| Endpoint | Description |
+|---|---|
+| `GET /static/version` | Latest Data Dragon version |
+| `GET /static/champions` | Champion map (numeric key → alphabetic id/name) |
+| `GET /static/items` | Item map with gold costs |
+| `GET /static/spells` | Summoner spell map (cast id → asset id) |
+| `GET /static/runes` | Flattened rune tree (perk id → icon/name/style) |
+| `GET /static/queues` | Queue catalog with `analyticsEligible` flags |
+
+### Caveats
+
+- **Dev-key sample size:** with a Riot development key (~20 req/100s), the
+  cache only accumulates matches from summoners people search for. Analytics
+  rows with low `games` are noise — gate them in the UI until the sample
+  grows.
+- **Custom-game history:** Riot requires RSO (production key) opt-in before a
+  player's custom-queue match history may be displayed. Until then the
+  backend filters what it can server-side (queued customs are rejected;
+  cached customs are dropped from lists) — full coverage lands with a
+  production key.
+- **No rank-tier analytics dimension:** Match v5 doesn't carry the players'
+  ranked tiers, so per-tier win rates (à la lolalytics) aren't computable
+  from current data.
+
 ## Contributing
 
 Contributions follow the conventions in [`AGENTS.md`](./AGENTS.md) — read it
