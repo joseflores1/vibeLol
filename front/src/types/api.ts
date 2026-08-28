@@ -91,6 +91,20 @@ export interface StaticRunesResponse {
   runes: Rune[];
 }
 
+// Summoner spell — mirrors the backend DdragonClient Spell. `key` is the
+// numeric cast ID sent by Match v5 (summoner1Id/summoner2Id); `id` is the
+// alphabetic Data Dragon asset name (e.g. "SummonerFlash").
+export interface Spell {
+  key: number;
+  name: string;
+  id: string;
+}
+
+export interface StaticSpellsResponse {
+  version: string;
+  spells: Spell[];
+}
+
 export interface QueueDefinition {
   id: number;
   key: string;
