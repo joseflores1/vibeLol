@@ -9,6 +9,7 @@ vi.mock('../src/ddragon/client.js', () => {
     getChampions: vi.fn(),
     getItems: vi.fn(),
     getSpells: vi.fn(),
+    getRunes: vi.fn(),
   };
   return { ddragonClient: mock };
 });
@@ -94,5 +95,47 @@ describe('GET /api/v1/static/*', () => {
         spells: [{ key: 4, name: 'Flash', id: 'SummonerFlash' }],
       },
     });
+  });
+
+  it('GET /runes returns 200 { success, data: { version, runes } }', async () => {
+    (ddragonClient.getVersion as ReturnType<typeof vi.fn>).mockReturnValueOnce('16.15.1');
+    (ddragonClient.getRunes as ReturnType<typeof vi.fn>).mockReturnValueOnce(
+      new Map([
+        [8112, {
+          id: 8112,
+          key: 'Electrocute',
+          name: 'Electrocute',
+          shortDesc: '',
+          longDesc: '',
+          icon: 'perk-images/styles/domination/electrocute/electrocute.png',
+          styleId: 8100,
+          styleKey: 'Domination',
+          styleName: 'Domination',
+        }],
+      ]),
+    );
+
+    const res = await request(app).get('/api/v1/static/runes');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      success: true,
+      data: {
+        version: '16.15.1',
+        runes: [{ id: 8112, key: 'Electrocute', styleKey: 'Domination' }],
+      },
+    });
+  });
+
+  it('GET /queues returns the static queue catalog with analytics flags', async () => {
+    const res = await request(app).get('/api/v1/static/queues');
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    const queues = res.body.data.queues as Array<{ id: number; analyticsEligible: boolean }>;
+    expect(queues.length).toBeGreaterThan(0);
+    // ARAM must stay analytics-ineligible; Ranked Solo must stay eligible.
+    expect(queues.find((q) => q.id === 450)?.analyticsEligible).toBe(false);
+    expect(queues.find((q) => q.id === 420)?.analyticsEligible).toBe(true);
   });
 });

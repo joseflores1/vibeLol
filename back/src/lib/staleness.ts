@@ -4,6 +4,7 @@ export const TTL = {
   league: 5 * 60 * 1000,
   mastery: 30 * 60 * 1000,
   matchList: 5 * 60 * 1000,
+  analytics: 10 * 60 * 1000,
 } as const;
 
 export function isStale(

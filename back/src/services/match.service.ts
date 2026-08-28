@@ -195,7 +195,22 @@ export const matchService = {
     const cluster: RiotCluster = clusterFromRegion(region);
     const riotAccount = await resolveAndCacheAccount(region, gameName, tagLine);
     const matchIds = await getMatchIdsByPuuid(cluster, riotAccount.puuid, opts);
-    const result = { puuid: riotAccount.puuid, matchIds };
+
+    // Server-side custom-game guarantee (Riot ToS: custom-queue history
+    // requires RSO opt-in to display). Riot's list endpoint returns bare
+    // IDs with no queue info, so customs can only be identified once their
+    // detail is cached — this pass drops every already-cached custom, and
+    // the guarantee strengthens as the cache warms.
+    const cachedCustoms = await prisma.match.findMany({
+      where: { matchId: { in: matchIds }, isCustom: true },
+      select: { matchId: true },
+    });
+    const customIds = new Set(cachedCustoms.map((m) => m.matchId));
+    const visibleIds = customIds.size > 0
+      ? matchIds.filter((id) => !customIds.has(id))
+      : matchIds;
+
+    const result = { puuid: riotAccount.puuid, matchIds: visibleIds };
     matchListCache.delete(key);
     matchListCache.set(key, { fetchedAt: new Date(), result });
     if (matchListCache.size > MAX_MATCH_LIST_CACHE_ENTRIES) {

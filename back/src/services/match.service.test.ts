@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   getMatchIdsByPuuid: vi.fn(),
   getMatch: vi.fn(),
   matchFindUnique: vi.fn(),
+  matchFindMany: vi.fn(),
   matchUpsert: vi.fn(),
   participantUpsert: vi.fn(),
 }));
@@ -13,6 +14,7 @@ vi.mock('../lib/client.js', () => ({
   prisma: {
     match: {
       findUnique: mocks.matchFindUnique,
+      findMany: mocks.matchFindMany,
       upsert: mocks.matchUpsert,
     },
     matchParticipant: { upsert: mocks.participantUpsert },
@@ -29,7 +31,10 @@ vi.mock('../riot/match.api.js', () => ({
 import { matchService } from './match.service.js';
 
 describe('matchService cache', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.matchFindMany.mockResolvedValue([]);
+  });
 
   it('caches match ID lists for the configured TTL', async () => {
     mocks.resolveAndCacheAccount.mockResolvedValue({ puuid: 'puuid-1' });
@@ -45,6 +50,26 @@ describe('matchService cache', () => {
     expect(first).toEqual(second);
     expect(mocks.resolveAndCacheAccount).toHaveBeenCalledTimes(1);
     expect(mocks.getMatchIdsByPuuid).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops already-cached custom matches from the visible list', async () => {
+    mocks.resolveAndCacheAccount.mockResolvedValue({ puuid: 'puuid-1' });
+    mocks.getMatchIdsByPuuid.mockResolvedValue(['NA1_400', 'NA1_401', 'NA1_402']);
+    mocks.matchFindMany.mockResolvedValue([{ matchId: 'NA1_401' }]);
+
+    const result = await matchService.findMatchIdsByRiotId(
+      'na1', 'CacheTest', 'CUSTOM1', { count: 10 },
+    );
+
+    expect(result.matchIds).toEqual(['NA1_400', 'NA1_402']);
+    expect(mocks.matchFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          matchId: { in: ['NA1_400', 'NA1_401', 'NA1_402'] },
+          isCustom: true,
+        },
+      }),
+    );
   });
 
   it('returns a cached match detail without calling Riot', async () => {

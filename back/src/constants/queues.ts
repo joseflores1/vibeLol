@@ -30,3 +30,9 @@ export const QUEUES: QueueDefinition[] = [
 ];
 
 export const queueById = new Map(QUEUES.map((queue) => [queue.id, queue]));
+
+// Queue ids the analytics surface may aggregate over (Riot ToS: no
+// Arena/Augment win rates; tutorials/Bots/URF pollute stats anyway).
+export const ANALYTICS_ELIGIBLE_QUEUE_IDS = QUEUES
+  .filter((queue) => queue.analyticsEligible)
+  .map((queue) => queue.id);
