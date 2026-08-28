@@ -21,9 +21,11 @@ vi.mock('../src/lib/client.js', () => {
   return {
     prisma: {
       matchParticipant: {
-        groupBy: vi.fn(async (args: { where: { win?: boolean } }) =>
-          args.where.win ? winRows : totalsRows,
-        ),
+        groupBy: vi.fn(async (args: { by: string[]; where: { win?: boolean } }) => {
+          if (args.by[0] === 'teamPosition') return [];
+          return args.where.win ? winRows : totalsRows;
+        }),
+        findMany: vi.fn(async () => []),
       },
     },
   };
@@ -83,5 +85,43 @@ describe('GET /api/v1/analytics/champions', () => {
     const where = (prisma.matchParticipant.groupBy as ReturnType<typeof vi.fn>).mock
       .calls[0]![0].where as { match: { gameVersion?: string } };
     expect(where.match.gameVersion).toBe('15.16.1');
+  });
+});
+
+describe('GET /api/v1/analytics/champions/:championId', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns 200 with the drilldown payload', async () => {
+    const res = await request(app).get('/api/v1/analytics/champions/266?queue=420');
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toMatchObject({
+      championId: 266,
+      queueId: 420,
+      games: 10,
+      wins: 6,
+      winRate: 0.6,
+      avgKills: 5.5,
+      positions: [],
+      items: [],
+      keystones: [],
+      spells: [],
+      matchups: [],
+    });
+  });
+
+  it('returns 400 for a non-numeric champion id', async () => {
+    const res = await request(app).get('/api/v1/analytics/champions/abc');
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+
+  it('returns 400 for a non-analytics-eligible queue on the drilldown', async () => {
+    const res = await request(app).get('/api/v1/analytics/champions/266?queue=450');
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
   });
 });
