@@ -105,6 +105,18 @@ export interface StaticSpellsResponse {
   spells: Spell[];
 }
 
+// Item — mirrors the backend DdragonClient Item. `gold` is the total cost.
+export interface Item {
+  id: number;
+  name: string;
+  gold: number;
+}
+
+export interface StaticItemsResponse {
+  version: string;
+  items: Item[];
+}
+
 export interface QueueDefinition {
   id: number;
   key: string;
@@ -238,4 +250,16 @@ export interface MatchDetail {
 export interface MatchIdsResponse {
   puuid: string;
   matchIds: string[];
+}
+
+// GET /search/suggest — autocomplete rows from the backend's Account cache.
+// profileIconId is null when the account has no cached Summoner row yet.
+export interface SummonerSuggestion {
+  gameName: string;
+  tagLine: string;
+  profileIconId: number | null;
+}
+
+export interface SearchSuggestResponse {
+  suggestions: SummonerSuggestion[];
 }

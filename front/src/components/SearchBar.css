@@ -66,3 +66,66 @@
   color: var(--text-muted);
   cursor: not-allowed;
 }
+
+/* ── Autocomplete dropdown ──
+ * Anchored to the game-name field; z-index above page content. No drop
+ * shadows (design-system rule) — the hairline border carries the edge. */
+.sb-field {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.sb-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  margin: 0;
+  padding: var(--space-1) 0;
+  list-style: none;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.sb-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-body);
+  font-size: var(--step-2);
+  cursor: pointer;
+}
+.sb-option.active {
+  background: var(--surface-2);
+  color: var(--text-display);
+}
+.sb-option .sb-name {
+  color: inherit;
+}
+.sb-option .sb-tag {
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+}
+.sb-option .sb-icon {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  flex-shrink: 0;
+}
+.sb-option.sb-empty {
+  color: var(--text-muted);
+  cursor: default;
+  font-size: var(--step-1);
+}
+
+@media (max-width: 700px) {
+  .sb-dropdown {
+    max-height: 240px;
+  }
+}
