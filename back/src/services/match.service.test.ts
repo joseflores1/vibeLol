@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   resolveAndCacheAccount: vi.fn(),
   getMatchIdsByPuuid: vi.fn(),
   getMatch: vi.fn(),
+  getTimeline: vi.fn(),
   matchFindUnique: vi.fn(),
   matchFindMany: vi.fn(),
   matchUpsert: vi.fn(),
@@ -34,6 +35,7 @@ vi.mock('./summoner.service.js', () => ({
 vi.mock('../riot/match.api.js', () => ({
   getMatchIdsByPuuid: mocks.getMatchIdsByPuuid,
   getMatch: mocks.getMatch,
+  getTimeline: mocks.getTimeline,
 }));
 
 import { matchService } from './match.service.js';
@@ -276,5 +278,89 @@ describe('matchService cache', () => {
         data: expect.objectContaining({ bansFetchedAt: expect.any(Date) }),
       }),
     );
+  });
+});
+
+describe('matchService.findTimeline', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.matchFindMany.mockResolvedValue([]);
+    mocks.banDeleteMany.mockResolvedValue({ count: 0 });
+    mocks.banCreateMany.mockResolvedValue({ count: 0 });
+    mocks.matchUpdate.mockResolvedValue({});
+  });
+
+  const rawTimeline = {
+    metadata: { dataVersion: '2', matchId: 'NA1_500', participants: ['puuid-1', 'puuid-2'] },
+    info: {
+      frameInterval: 60000,
+      frames: [
+        {
+          timestamp: 60000,
+          participantFrames: { 1: { participantId: 1, totalGold: 800 } },
+          events: [{ type: 'CHAMPION_KILL' }],
+        },
+      ],
+    },
+  };
+
+  it('serves the slimmed cached timeline without calling Riot', async () => {
+    mocks.matchFindUnique.mockResolvedValue({ timeline: rawTimeline });
+
+    const result = await matchService.findTimeline('na1', 'NA1_500');
+
+    expect(result).toEqual({
+      matchId: 'NA1_500',
+      puuids: ['puuid-1', 'puuid-2'],
+      frames: [
+        { timestamp: 60000, participantFrames: { 1: { participantId: 1, totalGold: 800 } } },
+      ],
+    });
+    expect(mocks.getTimeline).not.toHaveBeenCalled();
+  });
+
+  it('strips the events array from the served frames', async () => {
+    mocks.matchFindUnique.mockResolvedValue({ timeline: rawTimeline });
+
+    const result = await matchService.findTimeline('na1', 'NA1_500');
+
+    expect(JSON.stringify(result)).not.toContain('CHAMPION_KILL');
+    expect(JSON.stringify(result)).not.toContain('events');
+  });
+
+  it('fetches from Riot and persists the raw timeline on a miss', async () => {
+    // findTimeline cache check → miss; findMatchById cache check → miss;
+    // findMatchById enrichment re-read → persisted match.
+    mocks.matchFindUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ matchId: 'NA1_500', participants: [] });
+    mocks.matchUpsert.mockResolvedValue({ matchId: 'NA1_500' });
+    mocks.getMatch.mockResolvedValue({
+      metadata: { dataVersion: '2', matchId: 'NA1_500', participants: ['puuid-1'] },
+      info: {
+        gameCreation: 1_700_000_000_000,
+        gameDuration: 1800,
+        gameStartTimestamp: 1_700_000_000_000,
+        gameMode: 'CLASSIC',
+        gameType: 'MATCHED_GAME',
+        queueId: 420,
+        teams: [],
+        participants: [],
+      },
+    });
+    mocks.getTimeline.mockResolvedValue(rawTimeline);
+
+    const result = await matchService.findTimeline('na1', 'NA1_500');
+
+    expect(mocks.getTimeline).toHaveBeenCalledTimes(1);
+    expect(mocks.matchUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { matchId: 'NA1_500' },
+        data: expect.objectContaining({ timeline: expect.objectContaining({ info: expect.anything() }) }),
+      }),
+    );
+    expect(result.matchId).toBe('NA1_500');
+    expect(result.puuids).toEqual(['puuid-1', 'puuid-2']);
   });
 });

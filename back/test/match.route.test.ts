@@ -6,6 +6,7 @@ vi.mock('../src/services/match.service.js', () => ({
   matchService: {
     findMatchIdsByRiotId: vi.fn(),
     findMatchById: vi.fn(),
+    findTimeline: vi.fn(),
   },
 }));
 
@@ -132,6 +133,47 @@ describe('Match endpoints (summoner-scoped)', () => {
       );
 
       const res = await request(app).get('/api/v1/summoners/by-riot-id/G/T/matches/NA1_9999999999?region=na1');
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('GET /api/v1/matches/:matchId/timeline', () => {
+    it('returns 200 { success, data: { matchId, puuids, frames } } on a hit', async () => {
+      (matchService.findTimeline as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        matchId: 'NA1_1234567890',
+        puuids: ['puuid-1', 'puuid-2'],
+        frames: [{ timestamp: 60000, participantFrames: { 1: { totalGold: 800 } } }],
+      });
+
+      const res = await request(app).get('/api/v1/matches/NA1_1234567890/timeline?region=na1');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        success: true,
+        data: {
+          matchId: 'NA1_1234567890',
+          puuids: ['puuid-1', 'puuid-2'],
+          frames: [{ timestamp: 60000, participantFrames: { 1: { totalGold: 800 } } }],
+        },
+      });
+      expect(matchService.findTimeline).toHaveBeenCalledWith('na1', 'NA1_1234567890');
+    });
+
+    it('returns 400 on malformed matchId', async () => {
+      const res = await request(app).get('/api/v1/matches/nope/timeline?region=na1');
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('propagates ApiError 404 when the timeline is not on Riot', async () => {
+      const { ApiError } = await import('../src/utils/ApiError.js');
+      (matchService.findTimeline as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        ApiError.notFound('Riot API 404: timeline not found'),
+      );
+
+      const res = await request(app).get('/api/v1/matches/NA1_9999999999/timeline?region=na1');
 
       expect(res.status).toBe(404);
     });
