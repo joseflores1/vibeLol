@@ -1,17 +1,12 @@
 import { env } from '../config/env.js';
 import { ApiError } from '../utils/ApiError.js';
 import { createRateLimiter } from '../lib/rate-limiter.js';
+import type { RiotCluster, RiotRegion } from '../constants/regions.js';
 
-// Riot clusters (account/match-level routing): continental groupings.
-export type RiotCluster = 'americas' | 'europe' | 'asia' | 'sea';
-
-// Riot regions (summoner/league/mastery-level routing): per-server platforms.
-// Full list from https://developer.riotgames.com/docs/lol#routing-values
-export type RiotRegion =
-  | 'na1' | 'br1' | 'la1' | 'la2' | 'oc1'
-  | 'euw1' | 'eun1' | 'tr1' | 'ru'
-  | 'kr' | 'jp1'
-  | 'ph2' | 'sg2' | 'th2' | 'tw2' | 'vn2';
+// Routing values live in constants/regions.js (single source of truth —
+// validators and services import from there too). Re-exported here so the
+// riot layer's public surface stays stable for its consumers.
+export type { RiotCluster, RiotRegion };
 
 // Either routing value works in the URL host — Riot's API just uses the
 // routing value as the subdomain of api.riotgames.com.

@@ -1,13 +1,5 @@
 import { z } from 'zod';
-import type { RiotRegion } from '../riot/client.js';
-
-// All 16 Riot regions (platform routing) — from Riot's routing values table.
-const REGION_VALUES = [
-  'na1', 'br1', 'la1', 'la2', 'oc1',
-  'euw1', 'eun1', 'tr1', 'ru',
-  'kr', 'jp1',
-  'ph2', 'sg2', 'th2', 'tw2', 'vn2',
-] as const;
+import { REGION_VALUES } from '../constants/regions.js';
 
 // Param schema for routes that resolve a Riot ID (gameName#tagLine).
 export const riotIdParamSchema = z.object({
@@ -24,7 +16,3 @@ export const regionQuerySchema = z.object({
 // Types inferred from the schemas, reused as the service input types.
 export type RiotIdParam = z.infer<typeof riotIdParamSchema>;
 export type RegionQuery = z.infer<typeof regionQuerySchema>;
-// Re-export the region enum tuple for use in services/tests.
-export { REGION_VALUES };
-// Convenience: a strongly-typed region string (validated by zod at runtime).
-export type Region = RiotRegion;

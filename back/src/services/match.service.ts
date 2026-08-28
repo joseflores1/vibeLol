@@ -7,7 +7,8 @@ import {
   type RiotParticipant,
 } from '../riot/match.api.js';
 import type { RiotRegion, RiotCluster } from '../riot/client.js';
-import { clusterFromRegion, resolveAndCacheAccount } from './summoner.service.js';
+import { clusterFromRegion } from '../constants/regions.js';
+import { resolveAndCacheAccount } from './summoner.service.js';
 import { isStale, TTL } from '../lib/staleness.js';
 
 interface MatchListCacheEntry {

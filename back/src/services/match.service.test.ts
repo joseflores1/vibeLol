@@ -19,7 +19,6 @@ vi.mock('../lib/client.js', () => ({
   },
 }));
 vi.mock('./summoner.service.js', () => ({
-  clusterFromRegion: vi.fn(() => 'americas'),
   resolveAndCacheAccount: mocks.resolveAndCacheAccount,
 }));
 vi.mock('../riot/match.api.js', () => ({
