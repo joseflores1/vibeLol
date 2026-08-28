@@ -19,6 +19,7 @@ describe("<AppRoutes/>", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    expect(screen.getByText("vibeLol")).toBeDefined();
+    // The footer brand link shares the text — assert the hero heading specifically.
+    expect(screen.getByRole("heading", { level: 1, name: "vibeLol" })).toBeDefined();
   });
 });

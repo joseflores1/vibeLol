@@ -2,11 +2,86 @@
   background: var(--footer-bg);
   border-top: 1px solid var(--hairline-strong);
   margin-top: var(--space-7);
-  padding: var(--space-6) 0;
   color: var(--text-muted);
   font-size: var(--step-1);
 }
-.footer p {
-  max-width: 65ch;
+
+/* Three-column band: brand / data / resources. Stacks below 700px. */
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--content-pad);
+}
+
+.footer .footer-logo {
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  font-weight: 700;
+  color: var(--text-display);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+.footer .footer-logo:hover { color: var(--text-link-hover); }
+
+.footer .footer-tagline {
+  margin-top: var(--space-3);
+  max-width: 42ch;
   line-height: 1.6;
+}
+
+.footer .footer-heading {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-body);
+  margin: 0 0 var(--space-3);
+}
+
+.footer .footer-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  line-height: 1.5;
+}
+
+.footer .footer-col a {
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color var(--duration-fast) var(--ease);
+}
+.footer .footer-col a:hover {
+  color: var(--text-link-hover);
+  border-bottom-color: var(--hairline-strong);
+}
+
+/* Patch numeral — gold mono per the design system (gold = numerals). */
+.footer .footer-patch {
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+/* Attribution bar — full-width, hairline-separated. */
+.footer-bottom {
+  border-top: 1px solid var(--hairline);
+  padding: var(--space-4) 0;
+}
+.footer-bottom p {
+  max-width: 75ch;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
 }
