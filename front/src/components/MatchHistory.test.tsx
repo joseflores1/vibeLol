@@ -122,6 +122,8 @@ describe("<MatchHistory />", () => {
         puuid="abc123"
         version="15.8.1"
         championMap={championMap}
+        spellMap={new Map()}
+        runeMap={new Map()}
         activeTab="all"
         onTabChange={() => {}}
       />,
@@ -144,6 +146,8 @@ describe("<MatchHistory />", () => {
         puuid="abc123"
         version="15.8.1"
         championMap={championMap}
+        spellMap={new Map()}
+        runeMap={new Map()}
         activeTab="all"
         onTabChange={() => {}}
       />,
@@ -167,6 +171,8 @@ describe("<MatchHistory />", () => {
         puuid="abc123"
         version="15.8.1"
         championMap={championMap}
+        spellMap={new Map()}
+        runeMap={new Map()}
         activeTab="all"
         onTabChange={() => {}}
       />,

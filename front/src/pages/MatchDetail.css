@@ -1,0 +1,104 @@
+/* MatchDetail — the team-color diptych (AGENTS.md §12, reserved in
+ * tokens.css). Blue panel left, red panel right; they stack below 900px. */
+
+.match-detail {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-5) var(--content-pad) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.md-back {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: var(--step-1);
+  align-self: flex-start;
+}
+.md-back:hover { color: var(--text-link-hover); }
+
+/* Header: queue name + meta on the left, your verdict on the right. */
+.md-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.md-queue {
+  font-family: var(--font-display);
+  font-size: var(--step-4);
+  color: var(--text-display);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.md-meta {
+  color: var(--text-muted);
+  font-size: var(--step-1);
+}
+.md-verdict {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--step-3);
+  letter-spacing: -0.01em;
+}
+.md-verdict.win { color: var(--blue-team); }
+.md-verdict.loss { color: var(--red-team); }
+
+/* Diptych — two team panels side by side, 4px team-color top edge. */
+.md-teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.team-panel {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-top: 4px solid var(--team-color, var(--hairline));
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.team-banner {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--hairline);
+}
+.team-name {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  color: var(--text-display);
+}
+.team-verdict {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 700;
+}
+.team-verdict.win { color: var(--blue-team); }
+.team-verdict.loss { color: var(--red-team); }
+.team-objectives {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.team-objectives .numeric {
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+/* First row inside a panel must not double up with the banner border. */
+.team-rows .participant-row:first-child { border-top: none; }
+
+/* Responsive: stack the diptych, keep rows legible down to 360px. */
+@media (max-width: 900px) {
+  .md-teams { grid-template-columns: 1fr; }
+  .md-header { flex-direction: column; }
+  .md-verdict { align-self: flex-start; }
+}

@@ -17,15 +17,12 @@ import {
   useMasteryByRiotId,
   useStaticVersion,
   useStaticChampions,
-  type RiotRegion,
+  useStaticSpells,
+  useStaticRunes,
 } from "../hooks/useApi";
-import { REGIONS } from "../constants/regions";
+import { assertRegion } from "../constants/regions";
+import type { Champion, Spell, Rune } from "../types/api";
 import "./SummonerProfile.css";
-
-function assertRegion(s: string | null): RiotRegion {
-  const valid = REGIONS.map((r) => r.code);
-  return (valid.includes(s as RiotRegion) ? s : "na1") as RiotRegion;
-}
 
 export function SummonerProfilePage() {
   const params = useParams();
@@ -40,14 +37,28 @@ export function SummonerProfilePage() {
   const mastery = useMasteryByRiotId(gameName, tagLine, region);
   const staticVersion = useStaticVersion();
   const staticChampions = useStaticChampions();
+  const staticSpells = useStaticSpells();
+  const staticRunes = useStaticRunes();
 
   const championMap = useMemo(() => {
-    const m = new Map<number, import("../types/api").Champion>();
+    const m = new Map<number, Champion>();
     if (staticChampions.data) {
       for (const c of staticChampions.data.champions) m.set(c.key, c);
     }
     return m;
   }, [staticChampions.data]);
+
+  const spellMap = useMemo(() => {
+    const m = new Map<number, Spell>();
+    for (const s of staticSpells.data?.spells ?? []) m.set(s.key, s);
+    return m;
+  }, [staticSpells.data]);
+
+  const runeMap = useMemo(() => {
+    const m = new Map<number, Rune>();
+    for (const r of staticRunes.data?.runes ?? []) m.set(r.id, r);
+    return m;
+  }, [staticRunes.data]);
 
   const version = staticVersion.data?.version ?? "";
 
@@ -153,6 +164,8 @@ export function SummonerProfilePage() {
                     puuid={profile.data?.account.puuid}
                     version={version}
                     championMap={championMap}
+                    spellMap={spellMap}
+                    runeMap={runeMap}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
                   />
