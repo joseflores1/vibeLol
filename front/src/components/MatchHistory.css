@@ -8,6 +8,19 @@
 }
 .match-history .match-row { margin: 0; }
 
+/* Whole-card link to the match detail page — the card itself is the
+ * affordance, so the link must stay invisible and inherit card colors. */
+.match-row-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-md);
+}
+.match-row-link:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
 /* Skeleton placeholder while a detail is still loading */
 .match-row.skeleton {
   height: 96px;

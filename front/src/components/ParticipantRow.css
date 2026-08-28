@@ -1,0 +1,139 @@
+/* ParticipantRow — dense stat line inside a match detail team panel. */
+
+.participant-row {
+  display: grid;
+  grid-template-columns: 40px 44px minmax(6.5rem, 1fr) 76px 158px 64px 60px 56px;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--hairline);
+  min-height: 48px;
+  font-size: var(--step-1);
+  color: var(--text-body);
+}
+
+/* The searched player — raised surface + gold hairline (numeral-adjacent
+ * accent; the team stripe already carries the team color). */
+.participant-row.you {
+  background: var(--surface-2);
+  box-shadow: inset 2px 0 0 var(--gold);
+}
+
+/* Champion + level */
+.pr-champion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.participant-row .pr-champ-icon {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+}
+.participant-row .pr-level {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--gold);
+  line-height: 1;
+}
+
+/* Spells + keystone */
+.pr-loadout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.pr-spells {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.participant-row .pr-spell {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  border: 1px solid var(--hairline);
+  display: inline-block;
+}
+.participant-row .pr-spell.empty {
+  border-style: dashed;
+  border-color: var(--hairline);
+  background: var(--surface-0);
+}
+.participant-row .pr-keystone {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline-strong);
+}
+
+/* Riot ID */
+.participant-row .pr-name {
+  color: var(--text-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+/* KDA — gold mono numerals */
+.participant-row .pr-kda {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* Items */
+.pr-items {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+.participant-row .pr-item {
+  width: 20px;
+  height: 20px;
+  border-radius: 2px;
+  border: 1px solid var(--hairline);
+  background: var(--surface-0);
+  display: inline-block;
+}
+.participant-row .pr-item.empty {
+  border-style: dashed;
+  border-color: var(--hairline);
+}
+
+/* Stats */
+.pr-stat {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.participant-row .pr-stat .numeric {
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+/* Responsive: down to 360px — drop items + vision first, keep identity. */
+@media (max-width: 900px) {
+  .participant-row {
+    grid-template-columns: 40px 44px minmax(5rem, 1fr) 68px 64px 56px;
+  }
+  .participant-row .pr-items,
+  .participant-row .pr-stat:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .participant-row {
+    grid-template-columns: 40px 44px minmax(4rem, 1fr) 68px;
+    row-gap: var(--space-1);
+  }
+  .participant-row .pr-stat {
+    display: none;
+  }
+}

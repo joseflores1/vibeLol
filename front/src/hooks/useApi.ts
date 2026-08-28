@@ -12,6 +12,7 @@ import type {
   MatchIdsResponse,
   MatchDetail,
   StaticRunesResponse,
+  StaticSpellsResponse,
   StaticQueuesResponse,
 } from "../types/api";
 
@@ -41,21 +42,6 @@ export function useSummonerProfile(gameName: string, tagLine: string, region: Ri
     ),
     enabled: Boolean(gameName && tagLine),
     staleTime: 60_000,
-  });
-}
-
-export function useLeagueEntries(puuid: string | undefined, region: RiotRegion) {
-  // We route via Riot ID through the controller; once we have the puuid,
-  // the /league endpoint can be called directly. The hook offers puuid
-  // addressing for clarity at the call site.
-  return useQuery({
-    queryKey: ["league", puuid, region],
-    queryFn: () => apiGet<LeagueResponse>(
-      `/summoners/by-riot-id/${encodeURIComponent(puuid ?? "")}/league`,
-      { region },
-    ),
-    enabled: Boolean(puuid),
-    staleTime: 120_000,
   });
 }
 
@@ -110,6 +96,14 @@ export function useStaticRunes() {
   return useQuery({
     queryKey: ["static", "runes"],
     queryFn: () => apiGet<StaticRunesResponse>("/static/runes"),
+    staleTime: Infinity,
+  });
+}
+
+export function useStaticSpells() {
+  return useQuery({
+    queryKey: ["static", "spells"],
+    queryFn: () => apiGet<StaticSpellsResponse>("/static/spells"),
     staleTime: Infinity,
   });
 }

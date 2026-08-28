@@ -1,43 +1,28 @@
 import { prisma } from '../lib/client.js';
-import { ApiError } from '../utils/ApiError.js';
-import { getByRiotId, type RiotAccount } from '../riot/account.api.js';
+import type { Account } from '../generated/prisma/client.js';
+import { getByRiotId } from '../riot/account.api.js';
 import { getByPuuid, type RiotSummoner } from '../riot/summoner.api.js';
-import type { RiotCluster, RiotRegion } from '../riot/client.js';
+import type { RiotRegion } from '../riot/client.js';
 import { isStale, TTL } from '../lib/staleness.js';
-
-// Maps a region (na1/euw1/kr/…) to its cluster (americas/europe/asia).
-// Per Riot's routing values table. Used to route Account v1 (cluster-routed)
-// from a region the caller already knows.
-export function clusterFromRegion(region: RiotRegion): RiotCluster {
-  switch (region) {
-    case 'na1': case 'br1': case 'la1': case 'la2': case 'oc1':
-      return 'americas';
-    case 'euw1': case 'eun1': case 'tr1': case 'ru':
-      return 'europe';
-    case 'kr': case 'jp1':
-      return 'asia';
-    default:
-      // SEA cluster (sea.api.riotgames.com) — ph2/sg2/th2/tw2/vn2.
-      return 'sea';
-  }
-}
+import { clusterFromRegion } from '../constants/regions.js';
 
 // Shared Riot-ID-first helper: reads a fresh Account cache row when available,
-// otherwise resolves the Riot ID through Account v1 and persists it. Used by
-// league, mastery, and match services.
+// otherwise resolves the Riot ID through Account v1 and persists it. Always
+// returns the persisted Postgres row (same shape on hit and miss). Used by
+// league, mastery, match, and summoner services.
 // Throws Riot 404s as ApiError.notFound (propagated from riotGet).
 export async function resolveAndCacheAccount(
   region: RiotRegion,
   gameName: string,
   tagLine: string,
-): Promise<RiotAccount> {
+): Promise<Account> {
   const cached = await prisma.account.findUnique({
     where: { gameName_tagLine: { gameName, tagLine } },
   });
   if (cached && !isStale(cached.updatedAt, TTL.account)) return cached;
 
   const riotAccount = await getByRiotId(clusterFromRegion(region), gameName, tagLine);
-  await prisma.account.upsert({
+  return prisma.account.upsert({
     where: { puuid: riotAccount.puuid },
     create: {
       puuid: riotAccount.puuid,
@@ -51,7 +36,6 @@ export async function resolveAndCacheAccount(
       region,
     },
   });
-  return riotAccount;
 }
 
 // Business logic and database access for the Summoner entity.
@@ -65,32 +49,7 @@ export const summonerService = {
   // Summoner v4 is region-routed and a Riot ID alone doesn't tell you
   // the region (matches op.gg/lolalytics UX: user picks a region).
   async findByRiotId(region: RiotRegion, gameName: string, tagLine: string) {
-    const cachedAccount = await prisma.account.findUnique({
-      where: { gameName_tagLine: { gameName, tagLine } },
-    });
-    const account = cachedAccount && !isStale(cachedAccount.updatedAt, TTL.account)
-      ? cachedAccount
-      : await (async () => {
-        const riotAccount = await getByRiotId(
-          clusterFromRegion(region),
-          gameName,
-          tagLine,
-        );
-        return prisma.account.upsert({
-          where: { puuid: riotAccount.puuid },
-          create: {
-            puuid: riotAccount.puuid,
-            gameName: riotAccount.gameName,
-            tagLine: riotAccount.tagLine,
-            region,
-          },
-          update: {
-            gameName: riotAccount.gameName,
-            tagLine: riotAccount.tagLine,
-            region,
-          },
-        });
-      })();
+    const account = await resolveAndCacheAccount(region, gameName, tagLine);
 
     const cachedSummoner = await prisma.summoner.findUnique({
       where: { puuid: account.puuid },
@@ -125,7 +84,6 @@ export const summonerService = {
       },
     });
 
-    if (!account || !summoner) throw ApiError.conflict('Summoner upsert failed');
     return { account, summoner };
   },
 };

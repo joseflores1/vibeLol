@@ -1,4 +1,5 @@
 import { useQueries } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { Loading } from "./Loading";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
@@ -7,7 +8,7 @@ import { Tabs, type MatchTab } from "./Tabs";
 import { useMatchIds, type RiotRegion } from "../hooks/useApi";
 import { apiGet } from "../lib/api";
 import { TAB_TO_QUERY } from "../constants/queues";
-import type { Champion, MatchDetail } from "../types/api";
+import type { Champion, MatchDetail, Spell, Rune } from "../types/api";
 import "./MatchHistory.css";
 
 interface MatchHistoryProps {
@@ -17,6 +18,8 @@ interface MatchHistoryProps {
   puuid: string | undefined;
   version: string;
   championMap: Map<number, Champion>;
+  spellMap: Map<number, Spell>;
+  runeMap: Map<number, Rune>;
   activeTab: MatchTab;
   onTabChange: (tab: MatchTab) => void;
 }
@@ -32,6 +35,8 @@ export function MatchHistory({
   puuid,
   version,
   championMap,
+  spellMap,
+  runeMap,
   activeTab,
   onTabChange,
 }: MatchHistoryProps) {
@@ -114,12 +119,19 @@ export function MatchHistory({
           }
           return (
             <li key={id} className="match-row">
-              <MatchCard
-                match={match}
-                puuid={puuid ?? ""}
-                version={version}
-                championMap={championMap}
-              />
+              <Link
+                className="match-row-link"
+                to={`/summoners/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}/matches/${id}?region=${region}`}
+              >
+                <MatchCard
+                  match={match}
+                  puuid={puuid ?? ""}
+                  version={version}
+                  championMap={championMap}
+                  spellMap={spellMap}
+                  runeMap={runeMap}
+                />
+              </Link>
             </li>
           );
         })}

@@ -62,6 +62,29 @@
   white-space: nowrap;
 }
 
+/* Summoner spells + keystone rune — 14px, under the champion name. */
+.match-card .champ-loadout {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.match-card .mini-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  border: 1px solid var(--hairline);
+  display: inline-block;
+}
+.match-card .mini-icon.empty {
+  border-style: dashed;
+  border-color: var(--hairline);
+  background: var(--surface-0);
+}
+.match-card .mini-icon.keystone {
+  border-radius: 50%;
+  border-color: var(--hairline-strong);
+}
+
 /* KDA — gold numerals (AGENTS.md §12: gold reserved for numerals) */
 .match-card .kda {
   display: flex;

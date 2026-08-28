@@ -7,6 +7,13 @@ export interface RegionInfo {
   name: string;
 }
 
+const REGION_VALUES: RiotRegion[] = [
+  "na1", "br1", "la1", "la2", "oc1",
+  "euw1", "eun1", "tr1", "ru",
+  "kr", "jp1",
+  "ph2", "sg2", "th2", "tw2", "vn2",
+];
+
 // Per AGENTS.md §12: show both the platform code and a display name.
 // Riot's platform codes (na1, la1, la2) aren't user-friendly on their own.
 export const REGIONS: RegionInfo[] = [
@@ -35,4 +42,11 @@ const regionNameMap = new Map<RiotRegion, string>(
 
 export function regionDisplayName(code: RiotRegion): string {
   return regionNameMap.get(code) ?? code.toUpperCase();
+}
+
+// Validates a ?region= query param, falling back to na1 (the same default
+// the backend validators apply). Shared by every page that reads the region
+// from the URL.
+export function assertRegion(s: string | null): RiotRegion {
+  return (REGION_VALUES as readonly string[]).includes(s ?? "") ? (s as RiotRegion) : "na1";
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import { SearchBar } from "./SearchBar";
 
@@ -44,18 +44,25 @@ describe("<SearchBar />", () => {
 
   it("navigates to the summoner profile route on submit", async () => {
     const user = userEvent.setup();
-    const { router } = renderWithRouter() as unknown as { router: { navigate: (path: string) => void } & ReturnType<typeof render> };
-    // Noop — `router` isn't available; instead, just verify no throw and the
-    // search form submits via the navigate stub check below.
+    // Mount SearchBar next to a probe route that reports the matched path
+    // params — lets us assert the navigation target without mocking history.
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <Routes>
+          <Route path="/" element={<SearchBar />} />
+          <Route
+            path="/summoners/:gameName/:tagLine"
+            element={<div data-testid="probe" />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
     await user.type(screen.getByLabelText("Game name"), "Faker");
     await user.type(screen.getByLabelText("Tag line"), "420");
     await user.click(screen.getByRole("button", { name: "Search" }));
 
-    // Inside MemoryRouter the navigation replaces the in-memory location;
-    // we can't inspect the URL easily without useHistory, but the test passes
-    // if no error was thrown and the form submitted (button activated).
-    expect(screen.getByRole("button", { name: "Search" })).toBeDefined();
-    void router;
+    expect(screen.getByTestId("probe")).toBeDefined();
   });
 
   it("defaults to na1 region", () => {

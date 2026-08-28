@@ -1,5 +1,6 @@
-import type { MatchDetail, MatchParticipant, Champion } from "../types/api";
-import { championIconUrl, itemIconUrl } from "../lib/ddragon";
+import type { MatchDetail, MatchParticipant, Champion, Spell, Rune } from "../types/api";
+import { championIconUrl, itemIconUrl, spellIconUrl, runeIconUrl } from "../lib/ddragon";
+import { keystonePerkId } from "../lib/match";
 import "./MatchCard.css";
 
 interface MatchCardProps {
@@ -9,6 +10,8 @@ interface MatchCardProps {
   puuid: string;
   version: string;
   championMap: Map<number, Champion>;
+  spellMap: Map<number, Spell>;
+  runeMap: Map<number, Rune>;
 }
 
 function fmtDuration(seconds: number): string {
@@ -27,7 +30,7 @@ function fmtKda(k: number, d: number, a: number): { line: string; ratio: string 
 // win, red for loss — AGENTS.md §12). Layout columns: outcome | champion +
 // spell row | KDA (gold mono) | items | stat meta (gold earned + CS +
 // vision) | game mode + duration + timestamp.
-export function MatchCard({ match, puuid, version, championMap }: MatchCardProps) {
+export function MatchCard({ match, puuid, version, championMap, spellMap, runeMap }: MatchCardProps) {
   const you = match.participants.find((p) => p.puuid === puuid) as
     | MatchParticipant
     | undefined;
@@ -53,6 +56,10 @@ export function MatchCard({ match, puuid, version, championMap }: MatchCardProps
   const cs = you.totalMinionsKilled ?? 0;
   const goldK = (you.goldEarned / 1000).toFixed(1);
   const items = [you.item0, you.item1, you.item2, you.item3, you.item4, you.item5, you.item6];
+  const spell1 = spellMap.get(you.summoner1Id);
+  const spell2 = spellMap.get(you.summoner2Id);
+  const keystoneId = keystonePerkId(you.perks);
+  const keystone = keystoneId != null ? runeMap.get(keystoneId) : undefined;
   const startedAt = new Date(match.gameStartTimestamp);
   const modeLabel = match.gameMode ?? "Match";
 
@@ -73,6 +80,42 @@ export function MatchCard({ match, puuid, version, championMap }: MatchCardProps
           loading="lazy"
         />
         <span className="champ-name">{champion?.name ?? you.championName}</span>
+        <span className="champ-loadout">
+          {spell1 ? (
+            <img
+              className="mini-icon"
+              src={spellIconUrl(version, spell1.id)}
+              alt={spell1.name}
+              width={16}
+              height={16}
+              loading="lazy"
+            />
+          ) : (
+            <span className="mini-icon empty" />
+          )}
+          {spell2 ? (
+            <img
+              className="mini-icon"
+              src={spellIconUrl(version, spell2.id)}
+              alt={spell2.name}
+              width={16}
+              height={16}
+              loading="lazy"
+            />
+          ) : (
+            <span className="mini-icon empty" />
+          )}
+          {keystone && (
+            <img
+              className="mini-icon keystone"
+              src={runeIconUrl(keystone.icon)}
+              alt={keystone.name}
+              width={16}
+              height={16}
+              loading="lazy"
+            />
+          )}
+        </span>
       </div>
 
       <div className="kda">

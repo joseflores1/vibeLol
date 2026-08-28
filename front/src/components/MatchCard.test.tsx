@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MatchCard } from "./MatchCard";
-import type { MatchDetail, Champion } from "../types/api";
+import type { MatchDetail, Champion, Spell, Rune } from "../types/api";
 
 const baseMatch: MatchDetail = {
   matchId: "NA1_5000000000",
@@ -80,10 +80,38 @@ const championMap = new Map<number, Champion>([
   [89, { key: 89, id: "MonkeyKing", name: "Wukong", title: "the Monkey King", tags: [] }],
 ]);
 
+const spellMap = new Map<number, Spell>([
+  [4, { key: 4, name: "Flash", id: "SummonerFlash" }],
+  [14, { key: 14, name: "Ignite", id: "SummonerDot" }],
+]);
+
+const runeMap = new Map<number, Rune>([
+  [8112, {
+    id: 8112,
+    key: "Electrocute",
+    name: "Electrocute",
+    shortDesc: "",
+    longDesc: "",
+    icon: "perk-images/styles/domination/electrocute/electrocute.png",
+    styleId: 8100,
+    styleKey: "Domination",
+    styleName: "Domination",
+  }],
+]);
+
+const emptyMaps = { spellMap: new Map<number, Spell>(), runeMap: new Map<number, Rune>() };
+
 describe("<MatchCard />", () => {
   it("renders Victory for a winning participant with blue stripe class", () => {
     render(
-      <MatchCard match={baseMatch} puuid="abc123" version="15.8.1" championMap={championMap} />,
+      <MatchCard
+        match={baseMatch}
+        puuid="abc123"
+        version="15.8.1"
+        championMap={championMap}
+        spellMap={spellMap}
+        runeMap={runeMap}
+      />,
     );
     expect(screen.getByText("Victory")).toBeDefined();
     expect(screen.getByText("12/4/7")).toBeDefined();
@@ -100,6 +128,53 @@ describe("<MatchCard />", () => {
     expect(card?.classList.contains("win")).toBe(true);
   });
 
+  it("renders the searched player's summoner spells", () => {
+    render(
+      <MatchCard
+        match={baseMatch}
+        puuid="abc123"
+        version="15.8.1"
+        championMap={championMap}
+        spellMap={spellMap}
+        runeMap={runeMap}
+      />,
+    );
+    expect(screen.getByAltText("Flash")).toBeDefined();
+    expect(screen.getByAltText("Ignite")).toBeDefined();
+  });
+
+  it("renders the keystone rune when the participant has one", () => {
+    const matchWithPerks: MatchDetail = {
+      ...baseMatch,
+      participants: [
+        {
+          ...baseMatch.participants[0]!,
+          perks: {
+            styles: [
+              {
+                description: "primaryStyle",
+                style: 8100,
+                selections: [{ perk: 8112, var1: 1, var2: 0, var3: 0 }],
+              },
+            ],
+            statPerks: { defense: 5001, flex: 5008, offense: 5005 },
+          },
+        },
+      ],
+    };
+    render(
+      <MatchCard
+        match={matchWithPerks}
+        puuid="abc123"
+        version="15.8.1"
+        championMap={championMap}
+        spellMap={spellMap}
+        runeMap={runeMap}
+      />,
+    );
+    expect(screen.getByAltText("Electrocute")).toBeDefined();
+  });
+
   it("renders Defeat and red stripe for a losing participant", () => {
     const losingMatch: MatchDetail = {
       ...baseMatch,
@@ -108,7 +183,14 @@ describe("<MatchCard />", () => {
       ],
     };
     render(
-      <MatchCard match={losingMatch} puuid="abc123" version="15.8.1" championMap={championMap} />,
+      <MatchCard
+        match={losingMatch}
+        puuid="abc123"
+        version="15.8.1"
+        championMap={championMap}
+        spellMap={spellMap}
+        runeMap={runeMap}
+      />,
     );
     expect(screen.getByText("Defeat")).toBeDefined();
     const card = document.querySelector(".match-card");
@@ -123,14 +205,27 @@ describe("<MatchCard />", () => {
       ],
     };
     render(
-      <MatchCard match={perfectMatch} puuid="abc123" version="15.8.1" championMap={championMap} />,
+      <MatchCard
+        match={perfectMatch}
+        puuid="abc123"
+        version="15.8.1"
+        championMap={championMap}
+        spellMap={spellMap}
+        runeMap={runeMap}
+      />,
     );
     expect(screen.getByText("Perfect KDA")).toBeDefined();
   });
 
   it("renders a missing-participant row when puuid not found among participants", () => {
     render(
-      <MatchCard match={baseMatch} puuid="unknown" version="15.8.1" championMap={championMap} />,
+      <MatchCard
+        match={baseMatch}
+        puuid="unknown"
+        version="15.8.1"
+        championMap={championMap}
+        {...emptyMaps}
+      />,
     );
     expect(screen.getByText(/your stats unavailable/i)).toBeDefined();
     const missing = document.querySelector(".match-card.missing");
