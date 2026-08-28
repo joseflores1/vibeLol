@@ -1,6 +1,6 @@
-import type { MatchDetail, MatchParticipant, Champion, Spell, Rune } from "../types/api";
+import type { MatchDetail, MatchParticipant, Champion, Spell, Rune, Item } from "../types/api";
 import { championIconUrl, itemIconUrl, spellIconUrl, runeIconUrl } from "../lib/ddragon";
-import { keystonePerkId } from "../lib/match";
+import { keystonePerkId, secondaryPerkId } from "../lib/match";
 import "./MatchCard.css";
 
 interface MatchCardProps {
@@ -12,6 +12,7 @@ interface MatchCardProps {
   championMap: Map<number, Champion>;
   spellMap: Map<number, Spell>;
   runeMap: Map<number, Rune>;
+  itemMap: Map<number, Item>;
 }
 
 function fmtDuration(seconds: number): string {
@@ -30,7 +31,7 @@ function fmtKda(k: number, d: number, a: number): { line: string; ratio: string 
 // win, red for loss — AGENTS.md §12). Layout columns: outcome | champion +
 // spell row | KDA (gold mono) | items | stat meta (gold earned + CS +
 // vision) | game mode + duration + timestamp.
-export function MatchCard({ match, puuid, version, championMap, spellMap, runeMap }: MatchCardProps) {
+export function MatchCard({ match, puuid, version, championMap, spellMap, runeMap, itemMap }: MatchCardProps) {
   const you = match.participants.find((p) => p.puuid === puuid) as
     | MatchParticipant
     | undefined;
@@ -60,8 +61,15 @@ export function MatchCard({ match, puuid, version, championMap, spellMap, runeMa
   const spell2 = spellMap.get(you.summoner2Id);
   const keystoneId = keystonePerkId(you.perks);
   const keystone = keystoneId != null ? runeMap.get(keystoneId) : undefined;
+  const secondaryId = secondaryPerkId(you.perks);
+  const secondaryRune = secondaryId != null ? runeMap.get(secondaryId) : undefined;
   const startedAt = new Date(match.gameStartTimestamp);
   const modeLabel = match.gameMode ?? "Match";
+
+  function itemName(itemId: number | null): string | null {
+    if (itemId == null) return null;
+    return itemMap.get(itemId)?.name ?? `Item ${itemId}`;
+  }
 
   return (
     <div className={`match-card ${stripeClass}`} style={{ "--team-color": teamColor } as React.CSSProperties}>
@@ -110,6 +118,18 @@ export function MatchCard({ match, puuid, version, championMap, spellMap, runeMa
               className="mini-icon keystone"
               src={runeIconUrl(keystone.icon)}
               alt={keystone.name}
+              title={keystone.name}
+              width={16}
+              height={16}
+              loading="lazy"
+            />
+          )}
+          {secondaryRune && (
+            <img
+              className="mini-icon rune"
+              src={runeIconUrl(secondaryRune.icon)}
+              alt={secondaryRune.name}
+              title={secondaryRune.name}
               width={16}
               height={16}
               loading="lazy"
@@ -124,21 +144,23 @@ export function MatchCard({ match, puuid, version, championMap, spellMap, runeMa
       </div>
 
       <div className="items">
-        {items.map((itemId, i) =>
-          itemId == null ? (
+        {items.map((itemId, i) => {
+          const name = itemName(itemId);
+          return name == null ? (
             <span key={i} className="item-slot empty" />
           ) : (
             <img
               key={i}
               className="item-slot"
-              src={itemIconUrl(version, itemId)}
-              alt={`Item ${itemId}`}
+              src={itemIconUrl(version, itemId!)}
+              alt={name}
+              title={name}
               width={22}
               height={22}
               loading="lazy"
             />
-          ),
-        )}
+          );
+        })}
       </div>
 
       <div className="stats">

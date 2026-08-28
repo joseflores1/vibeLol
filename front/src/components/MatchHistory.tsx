@@ -8,7 +8,7 @@ import { Tabs, type MatchTab } from "./Tabs";
 import { useMatchIds, type RiotRegion } from "../hooks/useApi";
 import { apiGet } from "../lib/api";
 import { TAB_TO_QUERY } from "../constants/queues";
-import type { Champion, MatchDetail, Spell, Rune } from "../types/api";
+import type { Champion, MatchDetail, Spell, Rune, Item } from "../types/api";
 import "./MatchHistory.css";
 
 interface MatchHistoryProps {
@@ -20,6 +20,7 @@ interface MatchHistoryProps {
   championMap: Map<number, Champion>;
   spellMap: Map<number, Spell>;
   runeMap: Map<number, Rune>;
+  itemMap: Map<number, Item>;
   activeTab: MatchTab;
   onTabChange: (tab: MatchTab) => void;
 }
@@ -37,6 +38,7 @@ export function MatchHistory({
   championMap,
   spellMap,
   runeMap,
+  itemMap,
   activeTab,
   onTabChange,
 }: MatchHistoryProps) {
@@ -130,6 +132,7 @@ export function MatchHistory({
                   championMap={championMap}
                   spellMap={spellMap}
                   runeMap={runeMap}
+                  itemMap={itemMap}
                 />
               </Link>
             </li>

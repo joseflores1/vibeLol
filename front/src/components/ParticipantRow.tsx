@@ -1,6 +1,6 @@
-import type { MatchParticipant, Champion, Spell, Rune } from "../types/api";
+import type { MatchParticipant, Champion, Spell, Rune, Item } from "../types/api";
 import { championIconUrl, itemIconUrl, spellIconUrl, runeIconUrl } from "../lib/ddragon";
-import { keystonePerkId } from "../lib/match";
+import { keystonePerkId, secondaryPerkId } from "../lib/match";
 import "./ParticipantRow.css";
 
 interface ParticipantRowProps {
@@ -9,12 +9,13 @@ interface ParticipantRowProps {
   championMap: Map<number, Champion>;
   spellMap: Map<number, Spell>;
   runeMap: Map<number, Rune>;
+  itemMap: Map<number, Item>;
   // Highlights the searched player's row (gold edge + raised surface).
   isYou: boolean;
 }
 
 // One participant line inside a team panel — the dense stat row you'd find
-// on op.gg's match detail: champion + level | spells + keystone | Riot ID |
+// on op.gg's match detail: champion + level | spells + runes | Riot ID |
 // KDA (gold mono) | items | CS | gold | vision.
 export function ParticipantRow({
   participant: p,
@@ -22,12 +23,15 @@ export function ParticipantRow({
   championMap,
   spellMap,
   runeMap,
+  itemMap,
   isYou,
 }: ParticipantRowProps) {
   const champion = championMap.get(p.championId);
   const champIconId = champion?.id ?? p.championName;
   const keystoneId = keystonePerkId(p.perks);
   const keystone = keystoneId != null ? runeMap.get(keystoneId) : undefined;
+  const secondaryId = secondaryPerkId(p.perks);
+  const secondaryRune = secondaryId != null ? runeMap.get(secondaryId) : undefined;
   const spell1 = spellMap.get(p.summoner1Id);
   const spell2 = spellMap.get(p.summoner2Id);
   const cs = (p.totalMinionsKilled ?? 0) + (p.neutralMinionsKilled ?? 0);
@@ -36,6 +40,11 @@ export function ParticipantRow({
   const riotId = p.riotIdGameName
     ? `${p.riotIdGameName}${p.riotIdTagline ? `#${p.riotIdTagline}` : ""}`
     : "Unknown";
+
+  function itemName(itemId: number | null): string | null {
+    if (itemId == null) return null;
+    return itemMap.get(itemId)?.name ?? `Item ${itemId}`;
+  }
 
   return (
     <div className={`participant-row${isYou ? " you" : ""}`}>
@@ -85,6 +94,18 @@ export function ParticipantRow({
             className="pr-keystone"
             src={runeIconUrl(keystone.icon)}
             alt={keystone.name}
+            title={keystone.name}
+            width={18}
+            height={18}
+            loading="lazy"
+          />
+        )}
+        {secondaryRune && (
+          <img
+            className="pr-rune"
+            src={runeIconUrl(secondaryRune.icon)}
+            alt={secondaryRune.name}
+            title={secondaryRune.name}
             width={18}
             height={18}
             loading="lazy"
@@ -99,21 +120,23 @@ export function ParticipantRow({
       </span>
 
       <div className="pr-items">
-        {items.map((itemId, i) =>
-          itemId == null ? (
+        {items.map((itemId, i) => {
+          const name = itemName(itemId);
+          return name == null ? (
             <span key={i} className="pr-item empty" />
           ) : (
             <img
               key={i}
               className="pr-item"
-              src={itemIconUrl(version, itemId)}
-              alt={`Item ${itemId}`}
+              src={itemIconUrl(version, itemId!)}
+              alt={name}
+              title={name}
               width={20}
               height={20}
               loading="lazy"
             />
-          ),
-        )}
+          );
+        })}
       </div>
 
       <span className="pr-stat"><span className="numeric">{cs}</span> CS</span>

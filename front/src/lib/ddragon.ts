@@ -26,3 +26,9 @@ export function spellIconUrl(version: string, spellKey: string): string {
 export function runeIconUrl(iconPath: string): string {
   return `${DDRAGON_BASE}/cdn/img/${iconPath}`;
 }
+
+// Full-width champion splash art (version-independent path). Used for the
+// Home hero backdrop — decorative only.
+export function championSplashUrl(championId: string, skin = 0): string {
+  return `${DDRAGON_BASE}/cdn/img/champion/splash/${championId}_${skin}.jpg`;
+}

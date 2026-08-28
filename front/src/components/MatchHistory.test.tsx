@@ -124,6 +124,7 @@ describe("<MatchHistory />", () => {
         championMap={championMap}
         spellMap={new Map()}
         runeMap={new Map()}
+        itemMap={new Map()}
         activeTab="all"
         onTabChange={() => {}}
       />,
@@ -148,6 +149,7 @@ describe("<MatchHistory />", () => {
         championMap={championMap}
         spellMap={new Map()}
         runeMap={new Map()}
+        itemMap={new Map()}
         activeTab="all"
         onTabChange={() => {}}
       />,
@@ -173,6 +175,7 @@ describe("<MatchHistory />", () => {
         championMap={championMap}
         spellMap={new Map()}
         runeMap={new Map()}
+        itemMap={new Map()}
         activeTab="all"
         onTabChange={() => {}}
       />,
