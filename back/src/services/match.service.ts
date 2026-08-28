@@ -229,9 +229,13 @@ export const matchService = {
       where: { matchId },
       include: { participants: true },
     });
+    // bansFetchedAt gates one-time enrichment of matches cached before
+    // ban persistence (Phase 8b); legitimately ban-free games set it on
+    // their first Riot fetch, so there is no refetch loop.
     const needsEnrichment = !cached
       || cached.participants.length === 0
-      || cached.participants.some((participant) => participant.perks == null);
+      || cached.participants.some((participant) => participant.perks == null)
+      || cached.bansFetchedAt == null;
     if (cached && !needsEnrichment) return withTeamAggregates(cached);
 
     const cluster: RiotCluster = clusterFromRegion(region);
@@ -282,6 +286,23 @@ export const matchService = {
         update: participantData(p),
       });
     }
+
+    // Team bans: idempotent rewrite (delete + create) on every Riot fetch.
+    const bans = (riotMatch.info.teams ?? []).flatMap((team) =>
+      (team.bans ?? []).map((ban, banIndex) => ({
+        matchId: match.matchId,
+        teamId: team.teamId,
+        championId: ban.championId,
+        // Riot occasionally omits pickTurn; fall back to ban order (1-5).
+        pickTurn: ban.pickTurn ?? banIndex + 1,
+      })),
+    );
+    await prisma.matchBan.deleteMany({ where: { matchId: match.matchId } });
+    if (bans.length > 0) await prisma.matchBan.createMany({ data: bans });
+    await prisma.match.update({
+      where: { matchId: match.matchId },
+      data: { bansFetchedAt: new Date() },
+    });
 
     const enriched = await prisma.match.findUnique({
       where: { matchId },

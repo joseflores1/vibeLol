@@ -14,7 +14,14 @@ model Match {
   mapId               Int?               @map("map_id")
   queueId             Int?               @map("queue_id")
   isCustom            Boolean            @default(false) @map("is_custom")
+  // Set once team bans have been parsed + persisted for this match. Null
+  // on matches cached before Phase 8b — gates their one-time enrichment.
+  bansFetchedAt       DateTime?          @map("bans_fetched_at")
+  // Raw Match v5 timeline JSON, persisted fetch-through (Phase 8c). A
+  // finished match's timeline never changes, so it caches indefinitely.
+  timeline            Json?
   participants        MatchParticipant[]
+  bans                MatchBan[]
 
   @@index([queueId])
   @@index([gameCreation])

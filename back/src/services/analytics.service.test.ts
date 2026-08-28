@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   participantGroupBy: vi.fn(),
   participantFindMany: vi.fn(),
+  banGroupBy: vi.fn(),
 }));
 
 vi.mock('../lib/client.js', () => ({
@@ -11,6 +12,7 @@ vi.mock('../lib/client.js', () => ({
       groupBy: mocks.participantGroupBy,
       findMany: mocks.participantFindMany,
     },
+    matchBan: { groupBy: mocks.banGroupBy },
   },
 }));
 
@@ -31,6 +33,7 @@ const totalsRows = [
   },
 ];
 const winRows = [{ championId: 1, _count: { _all: 3 } }];
+const banRows = [{ championId: 1, _count: { _all: 1 } }];
 
 describe('analyticsService.findChampionStats', () => {
   beforeEach(() => {
@@ -39,6 +42,7 @@ describe('analyticsService.findChampionStats', () => {
     mocks.participantGroupBy.mockImplementation(async (args: {
       where: { win?: boolean };
     }) => (args.where.win ? winRows : totalsRows));
+    mocks.banGroupBy.mockResolvedValue(banRows);
     mocks.participantFindMany.mockResolvedValue([]);
   });
 
@@ -54,8 +58,10 @@ describe('analyticsService.findChampionStats', () => {
         championId: 1,
         games: 4,
         wins: 3,
+        bans: 1,
         winRate: 0.75,
         pickRate: 0.8,
+        banRate: 0.2,
         avgKills: 5,
         avgDeaths: 2.5,
         avgAssists: 7.5,
@@ -65,8 +71,10 @@ describe('analyticsService.findChampionStats', () => {
         championId: 2,
         games: 1,
         wins: 0,
+        bans: 0,
         winRate: 0,
         pickRate: 0.2,
+        banRate: 0,
         avgKills: 2,
         avgDeaths: 5,
         avgAssists: 1,
@@ -148,6 +156,7 @@ const detailTotals = [{
   },
 }];
 const detailWins = [{ championId: 7, _count: { _all: 2 } }];
+const detailBans = [{ championId: 7, _count: { _all: 1 } }];
 const positionRows = [
   { teamPosition: 'TOP', _count: { _all: 2 } },
   { teamPosition: 'JUNGLE', _count: { _all: 1 } },
@@ -195,6 +204,9 @@ describe('analyticsService.findChampionDetail', () => {
       }
       return args.where.win ? detailWins : detailTotals;
     });
+    mocks.banGroupBy.mockImplementation(async (args: {
+      where: { championId?: number };
+    }) => (args.where.championId === 999 ? [] : detailBans));
     mocks.participantFindMany.mockResolvedValue([]);
   });
 
@@ -204,7 +216,9 @@ describe('analyticsService.findChampionDetail', () => {
     expect(detail.championId).toBe(7);
     expect(detail.games).toBe(3);
     expect(detail.wins).toBe(2);
+    expect(detail.bans).toBe(1);
     expect(detail.winRate).toBeCloseTo(0.6667, 4);
+    expect(detail.banRate).toBeCloseTo(0.3333, 4);
     expect(detail.avgKills).toBe(5);
     expect(detail.avgDeaths).toBe(2);
     expect(detail.avgAssists).toBe(4);
@@ -269,6 +283,8 @@ describe('analyticsService.findChampionDetail', () => {
 
     expect(detail.games).toBe(0);
     expect(detail.winRate).toBe(0);
+    expect(detail.bans).toBe(0);
+    expect(detail.banRate).toBe(0);
     expect(detail.positions).toEqual([]);
     expect(detail.items).toEqual([]);
     expect(detail.keystones).toEqual([]);

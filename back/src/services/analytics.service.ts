@@ -16,10 +16,12 @@ export interface ChampionStatRow {
   championId: number;
   games: number;
   wins: number;
+  bans: number;
   // Ratios are 0..1 (frontend formats as %). Rounded to 4 decimals to keep
   // the JSON tidy; never re-round before deriving.
   winRate: number;
   pickRate: number;
+  banRate: number;
   avgKills: number;
   avgDeaths: number;
   avgAssists: number;
@@ -75,7 +77,7 @@ function buildWhere(queueId: number | null, patch: string | null) {
 
 async function computeAll(queueId: number | null, patch: string | null): Promise<ComputedScope> {
   const where = buildWhere(queueId, patch);
-  const [totals, winRows] = await Promise.all([
+  const [totals, winRows, banRows] = await Promise.all([
     prisma.matchParticipant.groupBy({
       by: ['championId'],
       where,
@@ -87,18 +89,25 @@ async function computeAll(queueId: number | null, patch: string | null): Promise
       where: { ...where, win: true },
       _count: { _all: true },
     }),
+    prisma.matchBan.groupBy({
+      by: ['championId'],
+      where,
+      _count: { _all: true },
+    }),
   ]);
 
   const winsById = new Map(winRows.map((row) => [row.championId, row._count._all]));
+  const bansById = new Map(banRows.map((row) => [row.championId, row._count._all]));
   const totalGames = totals.reduce((sum, row) => sum + row._count._all, 0);
 
   const rows: ChampionStatRow[] = totals
-    .map((row): TotalsRow & { wins: number } => {
+    .map((row): TotalsRow & { wins: number; bans: number } => {
       const games = row._count._all;
       return {
         championId: row.championId,
         games,
         wins: winsById.get(row.championId) ?? 0,
+        bans: bansById.get(row.championId) ?? 0,
         kills: row._sum.kills ?? 0,
         deaths: row._sum.deaths ?? 0,
         assists: row._sum.assists ?? 0,
@@ -107,13 +116,15 @@ async function computeAll(queueId: number | null, patch: string | null): Promise
     })
     .sort((a, b) => b.games - a.games || a.championId - b.championId)
     .map((row): ChampionStatRow => {
-      const { championId, games, wins, kills, deaths, assists, goldEarned } = row;
+      const { championId, games, wins, bans, kills, deaths, assists, goldEarned } = row;
       return {
         championId,
         games,
         wins,
+        bans,
         winRate: round(games > 0 ? wins / games : 0, 4),
         pickRate: round(totalGames > 0 ? games / totalGames : 0, 4),
+        banRate: round(totalGames > 0 ? bans / totalGames : 0, 4),
         avgKills: round(games > 0 ? kills / games : 0, 2),
         avgDeaths: round(games > 0 ? deaths / games : 0, 2),
         avgAssists: round(games > 0 ? assists / games : 0, 2),
@@ -157,7 +168,9 @@ export interface ChampionDetailResult {
   patch: string | null;
   games: number;
   wins: number;
+  bans: number;
   winRate: number;
+  banRate: number;
   avgKills: number;
   avgDeaths: number;
   avgAssists: number;
@@ -229,7 +242,7 @@ async function computeChampionDetail(
   const baseWhere = buildWhere(queueId, patch);
   const where = { ...baseWhere, championId };
 
-  const [totalsRows, winRows, positionRows, positionWinRows] = await Promise.all([
+  const [totalsRows, winRows, positionRows, positionWinRows, banRows] = await Promise.all([
     prisma.matchParticipant.groupBy({
       by: ['championId'],
       where,
@@ -262,11 +275,17 @@ async function computeChampionDetail(
       where: { ...where, win: true },
       _count: { _all: true },
     }),
+    prisma.matchBan.groupBy({
+      by: ['championId'],
+      where,
+      _count: { _all: true },
+    }),
   ]);
 
   const totals = totalsRows[0];
   const games = totals?._count._all ?? 0;
   const wins = winRows[0]?._count._all ?? 0;
+  const bans = banRows[0]?._count._all ?? 0;
   const sum = totals?._sum;
   const winsByPosition = new Map(
     positionWinRows.map((row) => [row.teamPosition, row._count._all]),
@@ -359,7 +378,9 @@ async function computeChampionDetail(
     patch,
     games,
     wins,
+    bans,
     winRate: round(games > 0 ? wins / games : 0, 4),
+    banRate: round(games > 0 ? bans / games : 0, 4),
     avgKills: round(games > 0 ? (sum?.kills ?? 0) / games : 0, 2),
     avgDeaths: round(games > 0 ? (sum?.deaths ?? 0) / games : 0, 2),
     avgAssists: round(games > 0 ? (sum?.assists ?? 0) / games : 0, 2),

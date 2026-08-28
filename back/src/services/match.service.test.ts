@@ -7,6 +7,9 @@ const mocks = vi.hoisted(() => ({
   matchFindUnique: vi.fn(),
   matchFindMany: vi.fn(),
   matchUpsert: vi.fn(),
+  matchUpdate: vi.fn(),
+  banDeleteMany: vi.fn(),
+  banCreateMany: vi.fn(),
   participantUpsert: vi.fn(),
 }));
 
@@ -16,6 +19,11 @@ vi.mock('../lib/client.js', () => ({
       findUnique: mocks.matchFindUnique,
       findMany: mocks.matchFindMany,
       upsert: mocks.matchUpsert,
+      update: mocks.matchUpdate,
+    },
+    matchBan: {
+      deleteMany: mocks.banDeleteMany,
+      createMany: mocks.banCreateMany,
     },
     matchParticipant: { upsert: mocks.participantUpsert },
   },
@@ -34,6 +42,9 @@ describe('matchService cache', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.matchFindMany.mockResolvedValue([]);
+    mocks.banDeleteMany.mockResolvedValue({ count: 0 });
+    mocks.banCreateMany.mockResolvedValue({ count: 0 });
+    mocks.matchUpdate.mockResolvedValue({});
   });
 
   it('caches match ID lists for the configured TTL', async () => {
@@ -75,6 +86,7 @@ describe('matchService cache', () => {
   it('returns a cached match detail without calling Riot', async () => {
     const cached = {
       matchId: 'NA1_200',
+      bansFetchedAt: new Date(),
       participants: [{
         teamId: 100,
         win: true,
@@ -119,6 +131,10 @@ describe('matchService cache', () => {
         gameVersion: '15.8.1',
         mapId: 11,
         queueId: 420,
+        teams: [
+          { teamId: 100, win: 'Win', bans: [{ championId: 86, pickTurn: 1 }, { championId: 157, pickTurn: 2 }] },
+          { teamId: 200, win: 'Fail', bans: [] },
+        ],
         participants: [{
           puuid: 'puuid-1',
           championId: 86,
@@ -188,11 +204,77 @@ describe('matchService cache', () => {
 
     expect(mocks.getMatch).toHaveBeenCalledTimes(1);
     expect(mocks.participantUpsert).toHaveBeenCalledTimes(1);
+    expect(mocks.banDeleteMany).toHaveBeenCalledWith({ where: { matchId: 'NA1_300' } });
+    expect(mocks.banCreateMany).toHaveBeenCalledWith({
+      data: [
+        { matchId: 'NA1_300', teamId: 100, championId: 86, pickTurn: 1 },
+        { matchId: 'NA1_300', teamId: 100, championId: 157, pickTurn: 2 },
+      ],
+    });
+    expect(mocks.matchUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { matchId: 'NA1_300' } }),
+    );
     expect(result?.teams).toEqual([expect.objectContaining({
       teamId: 100,
       totalGoldEarned: 12_000,
       totalVisionScore: 20,
       totalDamageDealtToChampions: 25_000,
     })]);
+  });
+
+  it('re-fetches cached matches whose bans were never parsed', async () => {
+    const cached = {
+      matchId: 'NA1_210',
+      bansFetchedAt: null,
+      participants: [{
+        teamId: 100,
+        win: true,
+        kills: 1,
+        deaths: 0,
+        assists: 2,
+        goldEarned: 1000,
+        visionScore: 4,
+        wardsPlaced: 1,
+        wardsKilled: 0,
+        totalMinionsKilled: 10,
+        totalDamageDealtToChampions: 500,
+        totalDamageTaken: 200,
+        damageDealtToObjectives: 50,
+        towerKills: 0,
+        inhibitorKills: 0,
+        baronKills: 0,
+        dragonKills: 0,
+        perks: {},
+      }],
+    };
+    mocks.matchFindUnique
+      .mockResolvedValueOnce(cached)
+      .mockResolvedValueOnce(cached);
+    mocks.getMatch.mockResolvedValue({
+      metadata: { dataVersion: '2', matchId: 'NA1_210', participants: ['puuid-1'] },
+      info: {
+        gameCreation: 1_700_000_000_000,
+        gameDuration: 1800,
+        gameStartTimestamp: 1_700_000_000_000,
+        gameMode: 'ARAM',
+        gameType: 'MATCHED_GAME',
+        queueId: 450,
+        teams: [{ teamId: 100, win: 'Win', bans: [] }],
+        participants: [],
+      },
+    });
+    mocks.matchUpsert.mockResolvedValue({ matchId: 'NA1_210' });
+
+    await matchService.findMatchById('na1', 'NA1_210');
+
+    expect(mocks.getMatch).toHaveBeenCalledTimes(1);
+    expect(mocks.banDeleteMany).toHaveBeenCalledWith({ where: { matchId: 'NA1_210' } });
+    expect(mocks.banCreateMany).not.toHaveBeenCalled();
+    expect(mocks.matchUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { matchId: 'NA1_210' },
+        data: expect.objectContaining({ bansFetchedAt: expect.any(Date) }),
+      }),
+    );
   });
 });

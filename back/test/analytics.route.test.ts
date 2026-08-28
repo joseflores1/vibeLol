@@ -18,6 +18,7 @@ vi.mock('../src/lib/client.js', () => {
     },
   ];
   const winRows = [{ championId: 266, _count: { _all: 6 } }];
+  const banRows = [{ championId: 266, _count: { _all: 2 } }];
   return {
     prisma: {
       matchParticipant: {
@@ -26,6 +27,9 @@ vi.mock('../src/lib/client.js', () => {
           return args.where.win ? winRows : totalsRows;
         }),
         findMany: vi.fn(async () => []),
+      },
+      matchBan: {
+        groupBy: vi.fn(async () => banRows),
       },
     },
   };
@@ -54,8 +58,10 @@ describe('GET /api/v1/analytics/champions', () => {
       championId: 266,
       games: 10,
       wins: 6,
+      bans: 2,
       winRate: 0.6,
       pickRate: 0.6667,
+      banRate: 0.1333,
       avgKills: 5.5,
       avgDeaths: 4,
       avgAssists: 6,
@@ -101,7 +107,9 @@ describe('GET /api/v1/analytics/champions/:championId', () => {
       queueId: 420,
       games: 10,
       wins: 6,
+      bans: 2,
       winRate: 0.6,
+      banRate: 0.2,
       avgKills: 5.5,
       positions: [],
       items: [],

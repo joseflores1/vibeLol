@@ -1,0 +1,17 @@
+// MatchBan — one champion ban in one match (from Match v5 info.teams[].bans).
+// Persisted to power per-champion banRate analytics. pickTurn is unique
+// within a team's ban list, so (matchId, teamId, pickTurn) is the natural
+// composite key; bans cascade-delete with their match.
+model MatchBan {
+  match      Match  @relation(fields: [matchId], references: [matchId], onDelete: Cascade)
+  matchId    String @map("match_id")
+  teamId     Int    @map("team_id")
+  championId Int    @map("champion_id")
+  // Ban order within the team (1-5); 0 when Riot omits it.
+  pickTurn   Int    @default(0) @map("pick_turn")
+
+  @@id([matchId, teamId, pickTurn])
+  // Fast "bans for champion X" aggregation.
+  @@index([championId])
+  @@map("match_bans")
+}
