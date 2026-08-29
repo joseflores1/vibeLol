@@ -1,0 +1,155 @@
+/* Champions analytics table — lolalytics-style density: mono decimals,
+ * tight rows, hairline rules. */
+
+.champions-page {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-5) var(--content-pad) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.champions-header h1 {
+  font-family: var(--font-display);
+  font-size: var(--step-4);
+  color: var(--text-display);
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-1);
+}
+.champions-sub {
+  color: var(--text-muted);
+  font-size: var(--step-1);
+  margin: 0;
+}
+
+.champions-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  font-size: var(--step-1);
+}
+
+.champions-table thead th {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--hairline-strong);
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.champions-table .col-num { text-align: right; }
+.champions-table thead .col-num { text-align: right; }
+
+.th-sort {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.th-sort:hover { color: var(--text-body); }
+.th-sort:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.champions-table tbody tr {
+  border-bottom: 1px solid var(--hairline);
+}
+.champions-table tbody tr:last-child { border-bottom: none; }
+.champions-table tbody tr:hover { background: var(--surface-2); }
+
+/* Low-sample rows read as secondary until the data matures. */
+.champions-table tbody tr.low-sample :is(td, .champion-name) {
+  opacity: 0.55;
+}
+.low-sample-chip {
+  font-size: 10px;
+  color: var(--text-muted);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.champion-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-display);
+  text-decoration: none;
+  padding: var(--space-2) var(--space-3);
+}
+.champion-cell img {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+}
+.champion-cell:hover .champion-name { color: var(--text-link-hover); }
+.champion-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.champions-table td {
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-body);
+  white-space: nowrap;
+}
+
+/* Gold numerals; the win-rate bar is data, not decoration. */
+.champions-table td.numeric,
+.win-cell {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--gold);
+}
+.win-cell {
+  display: inline-block;
+  min-width: 4.5em;
+}
+.win-bar {
+  display: block;
+  height: 3px;
+  margin-top: 2px;
+  border-radius: 2px;
+  background: var(--hairline);
+  position: relative;
+}
+.win-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--win-w, 0%);
+  border-radius: 2px;
+  background: var(--win-color, var(--blue-team));
+}
+.win-bar.above { --win-color: var(--blue-team); }
+.win-bar.below { --win-color: var(--red-team); }
+
+.load-more {
+  display: flex;
+  justify-content: center;
+}
+.load-more button {
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  color: var(--text-body);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease);
+}
+.load-more button:hover { background: var(--surface-2); }
+
+/* Responsive: horizontal scroll keeps the table usable at 360px. */
+.table-scroll { overflow-x: auto; }
+
+@media (max-width: 640px) {
+  .champions-table {
+    display: block;
+    overflow-x: auto;
+  }
+  .champions-table .col-champion { min-width: 10rem; }
+}

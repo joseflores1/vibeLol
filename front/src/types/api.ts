@@ -263,3 +263,102 @@ export interface SummonerSuggestion {
 export interface SearchSuggestResponse {
   suggestions: SummonerSuggestion[];
 }
+
+// ── Analytics (Phase 10) — mirrors back/src/services/analytics.service.ts ──
+
+export interface ChampionStatRow {
+  championId: number;
+  games: number;
+  wins: number;
+  bans: number;
+  // Ratios are 0..1 from the backend; the UI formats as percentages.
+  winRate: number;
+  pickRate: number;
+  banRate: number;
+  avgKills: number;
+  avgDeaths: number;
+  avgAssists: number;
+  avgGoldEarned: number;
+}
+
+export interface ChampionStatsResult {
+  queueId: number | null;
+  patch: string | null;
+  totalGames: number;
+  totalChampions: number;
+  start: number;
+  count: number;
+  champions: ChampionStatRow[];
+}
+
+export interface ChampionPositionRow {
+  position: string;
+  games: number;
+  wins: number;
+  winRate: number;
+}
+
+export interface PopularityRow {
+  id: number;
+  games: number;
+  pickRate: number;
+}
+
+export interface MatchupRow {
+  opponentChampionId: number;
+  games: number;
+  wins: number;
+  winRate: number;
+}
+
+export interface ChampionDetailResult {
+  championId: number;
+  queueId: number | null;
+  patch: string | null;
+  games: number;
+  wins: number;
+  bans: number;
+  winRate: number;
+  banRate: number;
+  avgKills: number;
+  avgDeaths: number;
+  avgAssists: number;
+  avgGoldEarned: number;
+  avgCs: number;
+  avgDamageDealtToChampions: number;
+  avgDamageTaken: number;
+  avgVisionScore: number;
+  avgChampLevel: number;
+  positions: ChampionPositionRow[];
+  items: PopularityRow[];
+  keystones: PopularityRow[];
+  spells: PopularityRow[];
+  matchups: MatchupRow[];
+}
+
+// ── Match timeline (Phase 10) — mirrors match.service.ts slimTimeline ──
+
+// puuids[i] is the puuid of participantId i+1 (Riot's ordering).
+export interface TimelineFrame {
+  timestamp: number;
+  participantFrames: Record<string, TimelineParticipantFrame>;
+}
+
+export interface TimelineParticipantFrame {
+  participantId: number;
+  level?: number | null;
+  currentGold?: number | null;
+  totalGold?: number | null;
+  goldPerSecond?: number | null;
+  jungleMinionsKilled?: number | null;
+  laneMinionsKilled?: number | null;
+  minionsKilled?: number | null;
+  xp?: number | null;
+  damageStats?: Record<string, number> | null;
+}
+
+export interface TimelineResponse {
+  matchId: string;
+  puuids: string[];
+  frames: TimelineFrame[];
+}
