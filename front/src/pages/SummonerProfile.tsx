@@ -27,11 +27,27 @@ import "./SummonerProfile.css";
 
 export function SummonerProfilePage() {
   const params = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const gameName = params.gameName ?? "";
   const tagLine = params.tagLine ?? "";
   const region = assertRegion(searchParams.get("region"));
   const [activeTab, setActiveTab] = useState<MatchTab>("all");
+
+  // Champion-filtered history (?champion=<id>) — set by mastery cards.
+  const championParam = searchParams.get("champion");
+  const championFilter =
+    championParam != null && /^\d+$/.test(championParam) ? Number(championParam) : undefined;
+
+  function clearChampionFilter() {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("champion");
+        return next;
+      },
+      { replace: true },
+    );
+  }
 
   const profile = useSummonerProfile(gameName, tagLine, region);
   const league = useLeagueByRiotId(gameName, tagLine, region);
@@ -177,6 +193,13 @@ export function SummonerProfilePage() {
                     itemMap={itemMap}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
+                    champion={championFilter}
+                    championName={
+                      championFilter != null
+                        ? championMap.get(championFilter)?.name
+                        : undefined
+                    }
+                    onClearChampion={championFilter != null ? clearChampionFilter : undefined}
                   />
                 </section>
               </div>

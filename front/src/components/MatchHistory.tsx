@@ -1,4 +1,5 @@
 import { useQueries } from "@tanstack/react-query";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Loading } from "./Loading";
 import { EmptyState } from "./EmptyState";
@@ -23,6 +24,10 @@ interface MatchHistoryProps {
   itemMap: Map<number, Item>;
   activeTab: MatchTab;
   onTabChange: (tab: MatchTab) => void;
+  // Cache-scoped champion filter (mastery card → matches on that champion).
+  champion?: number;
+  championName?: string;
+  onClearChampion?: () => void;
 }
 
 // Match history column — owns the live wire-up for Phase 3b.
@@ -41,9 +46,13 @@ export function MatchHistory({
   itemMap,
   activeTab,
   onTabChange,
+  champion,
+  championName,
+  onClearChampion,
 }: MatchHistoryProps) {
   const query = TAB_TO_QUERY[activeTab];
-  const matchIdsResp = useMatchIds(gameName, tagLine, region, { count: 10, ...query });
+  const [count, setCount] = useState(10);
+  const matchIdsResp = useMatchIds(gameName, tagLine, region, { count, ...query, champion });
 
   const matchIds = matchIdsResp.data?.matchIds ?? [];
 
@@ -65,8 +74,23 @@ export function MatchHistory({
     })),
   });
 
+  // Champion-filter banner — shown in every branch (loading, error, empty,
+  // and success) so the filter is always visible + clearable.
+  const championNote = champion != null ? (
+    <div className="champion-filter-note">
+      Matches on <strong>{championName ?? `champion ${champion}`}</strong> — from the
+      local cache.{" "}
+      {onClearChampion && (
+        <button className="champion-filter-clear" onClick={onClearChampion}>
+          Clear filter
+        </button>
+      )}
+    </div>
+  ) : null;
+
   if (matchIdsResp.isLoading) return (
     <>
+      {championNote}
       <Tabs active={activeTab} onChange={onTabChange} />
       <Loading label="Loading match history" />
     </>
@@ -74,6 +98,7 @@ export function MatchHistory({
 
   if (matchIdsResp.isError) return (
     <>
+      {championNote}
       <Tabs active={activeTab} onChange={onTabChange} />
       <ErrorState
         title="Couldn't load match history"
@@ -86,10 +111,15 @@ export function MatchHistory({
 
   if (!matchIdsResp.data || matchIds.length === 0) return (
     <>
+      {championNote}
       <Tabs active={activeTab} onChange={onTabChange} />
       <EmptyState
-        title={activeTab === "all" ? "No matches found." : `No ${labelFor(activeTab)} matches this season.`}
-        hint="Try a different queue tab, or search for another summoner."
+        title={champion != null
+          ? `No cached matches on ${championName ?? "this champion"} yet.`
+          : activeTab === "all" ? "No matches found." : `No ${labelFor(activeTab)} matches this season.`}
+        hint={champion != null
+          ? "Un-cached games won't appear until this profile's history has been fetched."
+          : "Try a different queue tab, or search for another summoner."}
       />
     </>
   );
@@ -99,6 +129,7 @@ export function MatchHistory({
 
   return (
     <>
+      {championNote}
       <Tabs active={activeTab} onChange={onTabChange} />
       {anyDetailPending && <Loading label="Loading match details" />}
       {detailError && (
@@ -139,6 +170,15 @@ export function MatchHistory({
           );
         })}
       </ul>
+
+      {/* More pages likely exist while Riot returns a full page of IDs. */}
+      {matchIds.length >= count && (
+        <div className="match-history-more">
+          <button onClick={() => setCount((c) => c + 10)}>
+            Load more (showing {matchIds.length})
+          </button>
+        </div>
+      )}
     </>
   );
 }

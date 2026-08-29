@@ -68,6 +68,28 @@ describe('Match endpoints (summoner-scoped)', () => {
       );
     });
 
+    it('passes the champion filter through to the service', async () => {
+      (matchService.findMatchIdsByRiotId as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        puuid: 'x',
+        matchIds: ['NA1_1'],
+      });
+
+      const res = await request(app).get('/api/v1/summoners/by-riot-id/G/T/matches?champion=157&count=10');
+
+      expect(res.status).toBe(200);
+      expect(matchService.findMatchIdsByRiotId).toHaveBeenCalledWith(
+        'na1', 'G', 'T',
+        expect.objectContaining({ champion: 157, count: 10 }),
+      );
+    });
+
+    it('returns 400 on a non-numeric champion filter', async () => {
+      const res = await request(app).get('/api/v1/summoners/by-riot-id/G/T/matches?champion=abc');
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
     it('returns 400 when count > 100', async () => {
       const res = await request(app).get('/api/v1/summoners/by-riot-id/G/T/matches?count=200');
 

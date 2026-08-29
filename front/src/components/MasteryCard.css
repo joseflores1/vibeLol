@@ -8,7 +8,12 @@
   border: 1px solid var(--hairline);
   border-radius: var(--radius-md);
   text-align: center;
+  text-decoration: none;
+  color: inherit;
+  transition: background var(--duration-fast) var(--ease);
 }
+.mastery-card:hover { background: var(--surface-2); }
+.mastery-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .mastery-card .champ-icon-wrap {
   position: relative;
   width: 48px;

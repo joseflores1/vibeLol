@@ -156,6 +156,9 @@ export interface MatchListQueryOpts {
   type?: string;
   start?: number;
   count?: number;
+  // Cache-scoped champion filter (Phase 11) — the backend serves this
+  // path from its local match_participants table.
+  champion?: number;
 }
 
 // Fetches the list of match IDs for a summoner. The `opts` shape mirrors
@@ -181,6 +184,7 @@ export function useMatchIds(
           count: opts.count,
           queue: opts.queue,
           type: opts.type,
+          champion: opts.champion,
         },
       ),
     enabled: Boolean(gameName && tagLine),

@@ -1,3 +1,4 @@
+import { Link, useParams } from "react-router-dom";
 import type { ChampionMastery, Champion } from "../types/api";
 import "./MasteryCard.css";
 
@@ -19,10 +20,18 @@ function timeAgo(dateStr: string): string {
 
 // Single champion mastery card — icon + mastery level badge + name +
 // points (mono gold) + "Last played" caption (AGENTS.md §12: 2x3 grid).
+// The whole card links to this summoner's cached matches on the champion.
 export function MasteryCard({ mastery, champion, version }: MasteryCardProps) {
+  const { gameName, tagLine } = useParams();
   const iconId = champion?.id ?? `${mastery.championId}`;
+  const championLabel = champion?.name ?? `champion ${mastery.championId}`;
+
   return (
-    <div className="mastery-card">
+    <Link
+      className="mastery-card"
+      to={`/summoners/${encodeURIComponent(gameName ?? "")}/${encodeURIComponent(tagLine ?? "")}?champion=${mastery.championId}`}
+      aria-label={`Matches on ${championLabel}`}
+    >
       <div className="champ-icon-wrap">
         <img
           className="champ-icon"
@@ -37,6 +46,6 @@ export function MasteryCard({ mastery, champion, version }: MasteryCardProps) {
       <span className="champ-name">{champion?.name ?? `#${mastery.championId}`}</span>
       <span className="champ-points">{mastery.championPoints.toLocaleString()}</span>
       <span className="last-played">{timeAgo(mastery.lastPlayTime)}</span>
-    </div>
+    </Link>
   );
 }

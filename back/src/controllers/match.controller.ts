@@ -21,12 +21,12 @@ export const matchController = {
   async getMatchIds(req: Request, res: Response) {
     const { gameName, tagLine } = riotIdParamSchema.parse(req.params);
     const query = matchListQuerySchema.parse(req.query);
-    const { region, start, count, startTime, endTime, queue, type } = query;
+    const { region, start, count, startTime, endTime, queue, type, champion } = query;
     const result = await matchService.findMatchIdsByRiotId(
       region as RiotRegion,
       gameName,
       tagLine,
-      { start, count, startTime, endTime, queue, type },
+      { start, count, startTime, endTime, queue, type, champion },
     );
     res.json({ success: true, data: result });
   },
