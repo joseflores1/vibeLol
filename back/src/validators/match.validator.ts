@@ -24,6 +24,10 @@ export const matchListQuerySchema = z.object({
       { message: 'Custom-queue matches are not exposed' },
     ),
   type: z.enum(['ranked', 'normal', 'tourney', 'tournament']).optional(),
+  // Champion-filtered history. Riot's list endpoint can't filter by
+  // champion, so the service switches to a cache-only path (querying our
+  // indexed match_participants) when this is present.
+  champion: z.coerce.number().int().min(0).optional(),
 });
 
 export type MatchIdParam = z.infer<typeof matchIdParamSchema>;

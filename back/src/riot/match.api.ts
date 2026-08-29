@@ -10,6 +10,10 @@ export interface MatchListOptions {
   endTime?: number;
   queue?: number;
   type?: 'ranked' | 'normal' | 'tourney' | 'tournament';
+  // Service-level only: never sent to Riot (their list endpoint has no
+  // champion filter). When set, the service serves from the local cache
+  // instead of calling getMatchIdsByPuuid at all.
+  champion?: number;
 }
 
 const perkSelectionSchema = z.object({

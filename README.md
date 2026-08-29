@@ -143,7 +143,7 @@ puuids (see AGENTS.md §5a). `region` is the platform code (`na1`, `euw1`,
 | Endpoint | Description |
 |---|---|
 | `GET /summoners/by-riot-id/:gameName/:tagLine?region=` | Account + Summoner profile (level, icon, revision) |
-| `GET /summoners/by-riot-id/:g/:t/matches?region=&start=&count=&queue=&type=&startTime=&endTime=` | Match ID list (`count` ≤ 100). Custom-queue matches are filtered server-side |
+| `GET /summoners/by-riot-id/:g/:t/matches?region=&start=&count=&queue=&type=&startTime=&endTime=&champion=` | Match ID list (`count` ≤ 100). Custom-queue matches are filtered server-side. `champion` switches to a cache-scoped path (Riot can't filter by champion) |
 | `GET /summoners/by-riot-id/:g/:t/matches/:matchId?region=` | Full match: 10 participants + team aggregates. Cached on first miss |
 | `GET /summoners/by-riot-id/:g/:t/league?region=` | Ranked entries (solo/flex; empty if unranked) |
 | `GET /summoners/by-riot-id/:g/:t/mastery?region=` | Full champion mastery list |
@@ -191,6 +191,10 @@ and matchups sample the champion's most recent ≤1000 cached rows.
   cache only accumulates matches from summoners people search for. Analytics
   rows with low `games` are noise — gate them in the UI until the sample
   grows.
+- **Champion-filtered history is cache-scoped:** Riot's match-list endpoint
+  has no champion filter, so `?champion=` serves exclusively from locally
+  cached matches. Un-cached games won't appear until the profile's match
+  history has been fetched.
 - **Custom-game history:** Riot requires RSO (production key) opt-in before a
   player's custom-queue match history may be displayed. Until then the
   backend filters what it can server-side (queued customs are rejected;

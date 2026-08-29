@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   banDeleteMany: vi.fn(),
   banCreateMany: vi.fn(),
   participantUpsert: vi.fn(),
+  participantFindMany: vi.fn(),
 }));
 
 vi.mock('../lib/client.js', () => ({
@@ -26,7 +27,10 @@ vi.mock('../lib/client.js', () => ({
       deleteMany: mocks.banDeleteMany,
       createMany: mocks.banCreateMany,
     },
-    matchParticipant: { upsert: mocks.participantUpsert },
+    matchParticipant: {
+      upsert: mocks.participantUpsert,
+      findMany: mocks.participantFindMany,
+    },
   },
 }));
 vi.mock('./summoner.service.js', () => ({
@@ -44,9 +48,35 @@ describe('matchService cache', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.matchFindMany.mockResolvedValue([]);
+    mocks.participantFindMany.mockResolvedValue([]);
     mocks.banDeleteMany.mockResolvedValue({ count: 0 });
     mocks.banCreateMany.mockResolvedValue({ count: 0 });
     mocks.matchUpdate.mockResolvedValue({});
+  });
+
+  it('serves champion-filtered lists from the cache without calling Riot', async () => {
+    mocks.resolveAndCacheAccount.mockResolvedValue({ puuid: 'puuid-1' });
+    mocks.participantFindMany.mockResolvedValue([
+      { matchId: 'NA1_600' },
+      { matchId: 'NA1_601' },
+    ]);
+
+    const result = await matchService.findMatchIdsByRiotId(
+      'na1', 'CacheTest', 'CHAMP1', { count: 10, champion: 157, queue: 420 },
+    );
+
+    expect(result).toEqual({ puuid: 'puuid-1', matchIds: ['NA1_600', 'NA1_601'] });
+    expect(mocks.participantFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          puuid: 'puuid-1',
+          championId: 157,
+          match: { isCustom: false, queueId: 420 },
+        },
+        take: 10,
+      }),
+    );
+    expect(mocks.getMatchIdsByPuuid).not.toHaveBeenCalled();
   });
 
   it('caches match ID lists for the configured TTL', async () => {

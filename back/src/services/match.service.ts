@@ -190,6 +190,28 @@ export const matchService = {
     tagLine: string,
     opts: MatchListOptions = {},
   ) {
+    // Champion-filtered history: Riot's list endpoint has no champion
+    // filter, so this path serves exclusively from the cached
+    // match_participants table (indexed on puuid + championId). Depth is
+    // bounded by what the cache holds — documented trade-off.
+    if (opts.champion != null) {
+      const riotAccount = await resolveAndCacheAccount(region, gameName, tagLine);
+      const rows = await prisma.matchParticipant.findMany({
+        where: {
+          puuid: riotAccount.puuid,
+          championId: opts.champion,
+          match: {
+            isCustom: false,
+            ...(opts.queue ? { queueId: opts.queue } : {}),
+          },
+        },
+        orderBy: { match: { gameCreation: 'desc' } },
+        take: opts.count ?? 20,
+        select: { matchId: true },
+      });
+      return { puuid: riotAccount.puuid, matchIds: rows.map((row) => row.matchId) };
+    }
+
     const key = matchListCacheKey(region, gameName, tagLine, opts);
     const cached = matchListCache.get(key);
     if (cached && !isStale(cached.fetchedAt, TTL.matchList)) return cached.result;
