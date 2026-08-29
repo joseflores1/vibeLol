@@ -16,6 +16,9 @@ import type {
   StaticQueuesResponse,
   StaticItemsResponse,
   SearchSuggestResponse,
+  ChampionStatsResult,
+  ChampionDetailResult,
+  TimelineResponse,
 } from "../types/api";
 
 // -- Types ---
@@ -202,5 +205,49 @@ export function useMatchDetail(
       ),
     enabled: Boolean(gameName && tagLine && matchId),
     staleTime: 300_000,
+  });
+}
+
+// -- Analytics (Phase 10) --
+
+// Aggregated champion stats. `queue` is a specific queue id or undefined
+// for all analytics-eligible queues. The backend computes on the fly with
+// its own 10-minute cache; 5 minutes client-side keeps tab switches snappy
+// without hammering the endpoint.
+export function useAnalyticsChampions(queue: number | undefined) {
+  return useQuery({
+    queryKey: ["analytics", "champions", queue ?? "all"],
+    queryFn: () =>
+      apiGet<ChampionStatsResult>("/analytics/champions", {
+        queue,
+        count: 100,
+      }),
+    staleTime: 300_000,
+  });
+}
+
+// Per-champion drilldown (averages, positions, popularity, matchups).
+export function useChampionDetail(championId: number | undefined, queue: number | undefined) {
+  return useQuery({
+    queryKey: ["analytics", "champion", championId, queue ?? "all"],
+    queryFn: () =>
+      apiGet<ChampionDetailResult>(
+        `/analytics/champions/${championId}`,
+        { queue },
+      ),
+    enabled: championId != null,
+    staleTime: 300_000,
+  });
+}
+
+// Match timeline (slimmed frames). Heavy payload (~hundreds of KB), so the
+// caller gates this hook behind an explicit expand toggle.
+export function useTimeline(matchId: string | undefined, region: RiotRegion) {
+  return useQuery({
+    queryKey: ["timeline", matchId, region],
+    queryFn: () =>
+      apiGet<TimelineResponse>(`/matches/${matchId}/timeline`, { region }),
+    enabled: Boolean(matchId),
+    staleTime: Infinity, // a finished match's timeline never changes
   });
 }

@@ -15,6 +15,7 @@ export function Nav(props: NavProps = {}) {
   return (
     <nav className="nav">
       <Link to="/" className="brand">vibeLol</Link>
+      <Link to="/champions" className="nav-link">Champions</Link>
       <div className="nav-search">
         <SearchBar
           initialGameName={props.initialGameName}

@@ -1,0 +1,178 @@
+/* Champion drilldown — stat band, position bars, popularity grids, matchups. */
+
+.champion-detail {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-5) var(--content-pad) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cd-back {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: var(--step-1);
+  align-self: flex-start;
+}
+.cd-back:hover { color: var(--text-link-hover); }
+
+.cd-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.cd-portrait {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline-strong);
+}
+.cd-identity h1 {
+  font-family: var(--font-display);
+  font-size: var(--step-4);
+  color: var(--text-display);
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.1;
+}
+.cd-title {
+  color: var(--text-muted);
+  font-size: var(--step-1);
+  margin: var(--space-1) 0 0;
+}
+
+/* Stat band — gold mono numerals (design-system rule). */
+.cd-statband {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--space-3);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.cd-stat { display: flex; flex-direction: column; gap: 2px; }
+.cd-stat-label {
+  color: var(--text-muted);
+  font-size: var(--step-1);
+}
+.cd-stat-value {
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* Panels + columns */
+.cd-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+.cd-panel {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.cd-panel-title {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  color: var(--text-display);
+  margin: 0 0 var(--space-3);
+}
+.cd-panel .cd-panel-title + .cd-panel-title { margin-top: var(--space-4); }
+.cd-muted { color: var(--text-muted); font-size: var(--step-1); }
+
+/* Position bars */
+.cd-position-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 56px 64px;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  font-size: var(--step-1);
+}
+.cd-position-name { color: var(--text-body); font-size: 12px; }
+.cd-position-bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--hairline);
+  position: relative;
+  overflow: hidden;
+}
+.cd-position-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+}
+.cd-position-fill.above { background: var(--blue-team); }
+.cd-position-fill.below { background: var(--red-team); }
+.cd-position-rate { font-family: var(--font-display); font-weight: 600; color: var(--gold); font-size: 12px; }
+
+/* Popularity icon grids */
+.cd-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: var(--space-2);
+}
+.cd-icon-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.cd-icon-cell img {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+}
+.cd-icon-cell .cd-rune { border-radius: 50%; }
+.cd-icon-caption {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--gold);
+}
+
+/* Matchups table */
+.cd-matchups {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step-1);
+}
+.cd-matchups th {
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--hairline-strong);
+}
+.cd-matchups td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--hairline);
+  color: var(--text-body);
+}
+.cd-matchups tr:last-child td { border-bottom: none; }
+.cd-matchups .col-num { text-align: right; }
+.cd-matchup-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-display);
+  text-decoration: none;
+}
+.cd-matchup-link:hover { color: var(--text-link-hover); }
+.cd-matchup-link img { border-radius: var(--radius-sm); border: 1px solid var(--hairline); }
+.cd-matchups td.numeric { font-family: var(--font-display); font-weight: 600; }
+.cd-matchups td.above { color: var(--blue-team); }
+.cd-matchups td.below { color: var(--red-team); }
+
+.cd-footnote {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .cd-columns { grid-template-columns: 1fr; }
+}

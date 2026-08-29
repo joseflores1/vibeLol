@@ -21,6 +21,16 @@
   flex-shrink: 0;
 }
 .nav .brand:hover { text-decoration: none; color: var(--gold); }
+.nav .nav-link {
+  font-family: var(--font-body);
+  font-size: var(--step-1);
+  font-weight: 600;
+  color: var(--text-body);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: color var(--duration-fast) var(--ease);
+}
+.nav .nav-link:hover { color: var(--text-link-hover); }
 .nav .nav-search {
   flex: 1;
   max-width: 480px;

@@ -5,6 +5,7 @@ import { Footer } from "../components/Footer";
 import { Loading } from "../components/Loading";
 import { ErrorState } from "../components/ErrorState";
 import { ParticipantRow } from "../components/ParticipantRow";
+import { TimelineSection } from "../components/TimelineChart";
 import {
   useMatchDetail,
   useSummonerProfile,
@@ -241,6 +242,15 @@ export function MatchDetailPage() {
             youPuuid={youPuuid}
           />
         </div>
+
+        <TimelineSection
+          matchId={m.matchId}
+          region={region}
+          match={m}
+          version={version}
+          championMap={championMap}
+          youPuuid={youPuuid}
+        />
       </div>
 
       <Footer />

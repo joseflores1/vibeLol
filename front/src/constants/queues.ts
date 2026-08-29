@@ -16,3 +16,26 @@ export const TAB_TO_QUERY: Record<MatchTab, { queue?: number; type?: string }> =
   flex: { queue: 440 },
   normal: { type: "normal" },
 };
+
+// ── Analytics queue tabs ──
+// Maps an AnalyticsTabs selection to the analytics query's queue id.
+// `undefined` = all analytics-eligible queues (the backend default).
+export type AnalyticsQueueTab = "all" | "solo" | "flex" | "draft";
+
+export const ANALYTICS_TAB_TO_QUEUE: Record<AnalyticsQueueTab, number | undefined> = {
+  all: undefined,
+  solo: 420,
+  flex: 440,
+  draft: 400,
+};
+
+export const TAB_TO_LABELS: Record<AnalyticsQueueTab, string> = {
+  all: "All",
+  solo: "Ranked Solo",
+  flex: "Ranked Flex",
+  draft: "Normal Draft",
+};
+
+export function queueForTab(tab: AnalyticsQueueTab): number | undefined {
+  return ANALYTICS_TAB_TO_QUEUE[tab];
+}
