@@ -14,6 +14,8 @@ import type {
   StaticRunesResponse,
   StaticSpellsResponse,
   StaticQueuesResponse,
+  StaticItemsResponse,
+  SearchSuggestResponse,
 } from "../types/api";
 
 // -- Types ---
@@ -105,6 +107,34 @@ export function useStaticSpells() {
     queryKey: ["static", "spells"],
     queryFn: () => apiGet<StaticSpellsResponse>("/static/spells"),
     staleTime: Infinity,
+  });
+}
+
+// Item catalog — used for item-name tooltips on item slots.
+export function useStaticItems() {
+  return useQuery({
+    queryKey: ["static", "items"],
+    queryFn: () => apiGet<StaticItemsResponse>("/static/items"),
+    staleTime: Infinity,
+  });
+}
+
+// Autocomplete suggestions from the backend's Account cache. Debouncing
+// happens at the call site (useDebouncedValue); here we only gate on the
+// 2-character minimum the backend enforces anyway. placeholderData keeps
+// the previous result list on screen while the next fetch resolves, so the
+// dropdown never blanks out between keystrokes.
+export function useSearchSuggest(q: string) {
+  const trimmed = q.trim();
+  return useQuery({
+    queryKey: ["search", "suggest", trimmed.toLowerCase()],
+    queryFn: () =>
+      apiGet<SearchSuggestResponse>(
+        `/search/suggest?q=${encodeURIComponent(trimmed)}`,
+      ),
+    enabled: trimmed.length >= 2,
+    staleTime: 60_000,
+    placeholderData: (previous) => previous,
   });
 }
 

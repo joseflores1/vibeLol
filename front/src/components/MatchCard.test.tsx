@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MatchCard } from "./MatchCard";
-import type { MatchDetail, Champion, Spell, Rune } from "../types/api";
+import type { MatchDetail, Champion, Spell, Rune, Item } from "../types/api";
 
 const baseMatch: MatchDetail = {
   matchId: "NA1_5000000000",
@@ -99,7 +99,16 @@ const runeMap = new Map<number, Rune>([
   }],
 ]);
 
-const emptyMaps = { spellMap: new Map<number, Spell>(), runeMap: new Map<number, Rune>() };
+const itemMap = new Map<number, Item>([
+  [3071, { id: 3071, name: "Black Cleaver", gold: 3000 }],
+  [3047, { id: 3047, name: "Plated Steelcaps", gold: 1100 }],
+]);
+
+const emptyMaps = {
+  spellMap: new Map<number, Spell>(),
+  runeMap: new Map<number, Rune>(),
+  itemMap: new Map<number, Item>(),
+};
 
 describe("<MatchCard />", () => {
   it("renders Victory for a winning participant with blue stripe class", () => {
@@ -111,6 +120,7 @@ describe("<MatchCard />", () => {
         championMap={championMap}
         spellMap={spellMap}
         runeMap={runeMap}
+        itemMap={itemMap}
       />,
     );
     expect(screen.getByText("Victory")).toBeDefined();
@@ -128,6 +138,24 @@ describe("<MatchCard />", () => {
     expect(card?.classList.contains("win")).toBe(true);
   });
 
+  it("labels item slots with the item name (tooltip + alt)", () => {
+    render(
+      <MatchCard
+        match={baseMatch}
+        puuid="abc123"
+        version="15.8.1"
+        championMap={championMap}
+        spellMap={spellMap}
+        runeMap={runeMap}
+        itemMap={itemMap}
+      />,
+    );
+    expect(screen.getByAltText("Black Cleaver")).toHaveProperty("title", "Black Cleaver");
+    expect(screen.getByAltText("Plated Steelcaps")).toBeDefined();
+    // Unmapped items fall back to a generic label instead of disappearing.
+    expect(screen.getByAltText("Item 3074")).toBeDefined();
+  });
+
   it("renders the searched player's summoner spells", () => {
     render(
       <MatchCard
@@ -137,6 +165,7 @@ describe("<MatchCard />", () => {
         championMap={championMap}
         spellMap={spellMap}
         runeMap={runeMap}
+        itemMap={itemMap}
       />,
     );
     expect(screen.getByAltText("Flash")).toBeDefined();
@@ -170,6 +199,7 @@ describe("<MatchCard />", () => {
         championMap={championMap}
         spellMap={spellMap}
         runeMap={runeMap}
+        itemMap={itemMap}
       />,
     );
     expect(screen.getByAltText("Electrocute")).toBeDefined();
@@ -190,6 +220,7 @@ describe("<MatchCard />", () => {
         championMap={championMap}
         spellMap={spellMap}
         runeMap={runeMap}
+        itemMap={itemMap}
       />,
     );
     expect(screen.getByText("Defeat")).toBeDefined();
@@ -212,6 +243,7 @@ describe("<MatchCard />", () => {
         championMap={championMap}
         spellMap={spellMap}
         runeMap={runeMap}
+        itemMap={itemMap}
       />,
     );
     expect(screen.getByText("Perfect KDA")).toBeDefined();

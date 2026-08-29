@@ -19,9 +19,10 @@ import {
   useStaticChampions,
   useStaticSpells,
   useStaticRunes,
+  useStaticItems,
 } from "../hooks/useApi";
 import { assertRegion } from "../constants/regions";
-import type { Champion, Spell, Rune } from "../types/api";
+import type { Champion, Spell, Rune, Item } from "../types/api";
 import "./SummonerProfile.css";
 
 export function SummonerProfilePage() {
@@ -39,6 +40,7 @@ export function SummonerProfilePage() {
   const staticChampions = useStaticChampions();
   const staticSpells = useStaticSpells();
   const staticRunes = useStaticRunes();
+  const staticItems = useStaticItems();
 
   const championMap = useMemo(() => {
     const m = new Map<number, Champion>();
@@ -59,6 +61,12 @@ export function SummonerProfilePage() {
     for (const r of staticRunes.data?.runes ?? []) m.set(r.id, r);
     return m;
   }, [staticRunes.data]);
+
+  const itemMap = useMemo(() => {
+    const m = new Map<number, Item>();
+    for (const i of staticItems.data?.items ?? []) m.set(i.id, i);
+    return m;
+  }, [staticItems.data]);
 
   const version = staticVersion.data?.version ?? "";
 
@@ -166,6 +174,7 @@ export function SummonerProfilePage() {
                     championMap={championMap}
                     spellMap={spellMap}
                     runeMap={runeMap}
+                    itemMap={itemMap}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
                   />

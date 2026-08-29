@@ -67,6 +67,13 @@
   border-radius: 50%;
   border: 1px solid var(--hairline-strong);
 }
+.participant-row .pr-rune {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline);
+  opacity: 0.9;
+}
 
 /* Riot ID */
 .participant-row .pr-name {

@@ -1,10 +1,42 @@
 .home {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-7);
-  padding: var(--space-7) 0;
+  padding: var(--space-8) 0;
   text-align: center;
+}
+
+/* Splash backdrop — Data Dragon champion splash, dimmed with a flat scrim
+ * so the parchment text keeps contrast. Anchored right so the art reads
+ * next to the centered text instead of behind it. Decorative: aria-hidden,
+ * no animation, respects prefers-reduced-motion by simply being static. */
+.home .home-hero {
+  position: absolute;
+  inset: calc(-1 * var(--space-8)) 0 0;
+  background-image:
+    linear-gradient(
+      90deg,
+      var(--surface-0) 18%,
+      color-mix(in srgb, var(--surface-0) 72%, transparent) 48%,
+      color-mix(in srgb, var(--surface-0) 30%, transparent) 100%
+    ),
+    var(--splash);
+  background-size: cover;
+  background-position: center 22%;
+  background-repeat: no-repeat;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Text + search stay above the backdrop. */
+.home > h1,
+.home > .tagline,
+.home > .searchbar {
+  position: relative;
+  z-index: 1;
 }
 
 .home h1 {
@@ -16,7 +48,7 @@
 }
 
 .home .tagline {
-  color: var(--text-muted);
+  color: var(--text-body);
   max-width: 32ch;
   font-size: var(--step-2);
   line-height: 1.5;

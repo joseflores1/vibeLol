@@ -18,7 +18,7 @@ describe('GET /api/v1/search/suggest', () => {
 
   it('returns 200 { success, data: { suggestions } } on a hit', async () => {
     (searchService.suggest as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-      { gameName: 'Faker', tagLine: 'KR1' },
+      { gameName: 'Faker', tagLine: 'KR1', profileIconId: 5764 },
     ]);
 
     const res = await request(app).get('/api/v1/search/suggest?q=faker');
@@ -26,7 +26,7 @@ describe('GET /api/v1/search/suggest', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       success: true,
-      data: { suggestions: [{ gameName: 'Faker', tagLine: 'KR1' }] },
+      data: { suggestions: [{ gameName: 'Faker', tagLine: 'KR1', profileIconId: 5764 }] },
     });
   });
 

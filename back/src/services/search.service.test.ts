@@ -17,20 +17,27 @@ describe('searchService.suggest', () => {
 
   it('queries the Account cache with an insensitive prefix match, capped at 10', async () => {
     const rows = [
-      { gameName: 'Faker', tagLine: 'KR1' },
-      { gameName: 'fakerette', tagLine: 'EUW' },
+      { gameName: 'Faker', tagLine: 'KR1', summoner: { profileIconId: 5764 } },
+      { gameName: 'fakerette', tagLine: 'EUW', summoner: null },
     ];
     mocks.accountFindMany.mockResolvedValue(rows);
 
     const result = await searchService.suggest({ q: 'Faker' });
 
-    expect(result).toEqual(rows);
+    expect(result).toEqual([
+      { gameName: 'Faker', tagLine: 'KR1', profileIconId: 5764 },
+      { gameName: 'fakerette', tagLine: 'EUW', profileIconId: null },
+    ]);
     expect(mocks.accountFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { gameName: { contains: 'Faker', mode: 'insensitive' } },
         orderBy: { updatedAt: 'desc' },
         take: 10,
-        select: { gameName: true, tagLine: true },
+        select: {
+          gameName: true,
+          tagLine: true,
+          summoner: { select: { profileIconId: true } },
+        },
       }),
     );
   });

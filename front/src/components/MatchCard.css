@@ -84,6 +84,10 @@
   border-radius: 50%;
   border-color: var(--hairline-strong);
 }
+.match-card .mini-icon.rune {
+  border-radius: 50%;
+  opacity: 0.9;
+}
 
 /* KDA — gold numerals (AGENTS.md §12: gold reserved for numerals) */
 .match-card .kda {

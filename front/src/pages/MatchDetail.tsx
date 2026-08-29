@@ -13,6 +13,7 @@ import {
   useStaticSpells,
   useStaticRunes,
   useStaticQueues,
+  useStaticItems,
 } from "../hooks/useApi";
 import { assertRegion, regionDisplayName } from "../constants/regions";
 import { positionRank } from "../lib/match";
@@ -20,6 +21,7 @@ import type {
   Champion,
   Spell,
   Rune,
+  Item,
   MatchParticipant,
   MatchTeam,
   QueueDefinition,
@@ -40,6 +42,7 @@ interface TeamPanelProps {
   championMap: Map<number, Champion>;
   spellMap: Map<number, Spell>;
   runeMap: Map<number, Rune>;
+  itemMap: Map<number, Item>;
   youPuuid: string | undefined;
 }
 
@@ -53,6 +56,7 @@ function TeamPanel({
   championMap,
   spellMap,
   runeMap,
+  itemMap,
   youPuuid,
 }: TeamPanelProps) {
   const side = teamId === 100 ? "blue" : "red";
@@ -92,6 +96,7 @@ function TeamPanel({
             championMap={championMap}
             spellMap={spellMap}
             runeMap={runeMap}
+            itemMap={itemMap}
             isYou={p.puuid === youPuuid}
           />
         ))}
@@ -115,6 +120,7 @@ export function MatchDetailPage() {
   const staticSpells = useStaticSpells();
   const staticRunes = useStaticRunes();
   const staticQueues = useStaticQueues();
+  const staticItems = useStaticItems();
 
   // Static lookup maps — built once from the backend's /static endpoints
   // (staleTime Infinity, so these datasets are session-constant).
@@ -141,6 +147,12 @@ export function MatchDetailPage() {
     for (const q of staticQueues.data?.queues ?? []) m.set(q.id, q);
     return m;
   }, [staticQueues.data]);
+
+  const itemMap = useMemo(() => {
+    const m = new Map<number, Item>();
+    for (const i of staticItems.data?.items ?? []) m.set(i.id, i);
+    return m;
+  }, [staticItems.data]);
 
   const version = staticVersion.data?.version ?? "";
   const youPuuid = profile.data?.account.puuid;
@@ -214,6 +226,7 @@ export function MatchDetailPage() {
             championMap={championMap}
             spellMap={spellMap}
             runeMap={runeMap}
+            itemMap={itemMap}
             youPuuid={youPuuid}
           />
           <TeamPanel
@@ -224,6 +237,7 @@ export function MatchDetailPage() {
             championMap={championMap}
             spellMap={spellMap}
             runeMap={runeMap}
+            itemMap={itemMap}
             youPuuid={youPuuid}
           />
         </div>
